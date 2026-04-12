@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "kick",
-  version: "1.0.0",
+  version: "1.1.0",
   hasPermssion: 1,
   credits: "sabbir",
   description: "Group থেকে কাউকে বের করো",
@@ -10,37 +10,49 @@ module.exports.config = {
   cooldowns: 5
 };
 
-module.exports.onStart = async function ({ api, message, event }) {
+module.exports.onStart = async function ({ api, event }) {
   const { mentions, threadID, senderID } = event;
   const mentionIDs = Object.keys(mentions || {});
+  const lang = global.getText("commands", "kick");
 
   if (mentionIDs.length === 0) {
-    return message.reply("❌ কাকে kick করবে? কাউকে mention করো!\nযেমন: /kick @name");
+    return api.sendMessage(lang.noMention, threadID, event.messageID);
   }
 
-  const adminList = global.GoatBot?.config?.adminBot || [];
+  const adminList = (global.GoatBot?.config?.adminBot || []).map(String);
   const botID = String(api.getCurrentUserID());
 
   for (const uid of mentionIDs) {
     if (adminList.includes(String(uid)) || String(uid) === botID) {
-      return message.reply(`🚫 Admin বা Bot কে kick করা যাবে না!`);
+      return api.sendMessage(lang.cantKickAdmin, threadID, event.messageID);
     }
   }
 
+  let threadInfo;
   try {
-    const threadInfo = await api.getThreadInfo(threadID);
-    const adminIDs = (threadInfo.adminIDs || []).map(a => String(a.id));
-
-    if (!adminIDs.includes(String(senderID)) && !adminList.includes(String(senderID))) {
-      return message.reply("🚫 শুধু group admin kick করতে পারবে!");
-    }
-
-    for (const uid of mentionIDs) {
-      const name = mentions[uid].replace("@", "");
-      await api.removeUserFromGroup(uid, threadID);
-      await message.reply(`✅ ${name} কে group থেকে বের করা হয়েছে! 🦵`);
-    }
+    threadInfo = await api.getThreadInfo(threadID);
   } catch (err) {
-    return message.reply("❌ Kick করতে পারিনি। Bot এর admin permission আছে কি?");
+    return api.sendMessage(lang.error, threadID, event.messageID);
+  }
+
+  const groupAdminIDs = (threadInfo.adminIDs || []).map(a => String(a.id));
+  const senderIsGroupAdmin = groupAdminIDs.includes(String(senderID));
+  const senderIsBotAdmin = adminList.includes(String(senderID));
+
+  if (!senderIsGroupAdmin && !senderIsBotAdmin) {
+    return api.sendMessage(lang.notGroupAdmin, threadID, event.messageID);
+  }
+
+  for (const uid of mentionIDs) {
+    const name = (mentions[uid] || "").replace(/^@/, "");
+    try {
+      await api.removeUserFromGroup(uid, threadID);
+      await api.sendMessage(
+        lang.success.replace("%1", name),
+        threadID
+      );
+    } catch (err) {
+      await api.sendMessage(lang.error, threadID, event.messageID);
+    }
   }
 };

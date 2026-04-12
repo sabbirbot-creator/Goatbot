@@ -1,47 +1,51 @@
 module.exports.config = {
   name: "tag",
-  version: "1.0.0",
+  version: "1.1.0",
   hasPermssion: 0,
   credits: "sabbir",
-  description: "Mention করো — reply দিলে সেই ব্যক্তিকে, /tag all দিলে সবাইকে",
+  description: "Mention করো — reply দিলে সেই ব্যক্তিকে, /tag all দিলে @everyone দিয়ে সবাইকে",
   usePrefix: true,
   category: "Group",
   usages: "tag [all] | reply করে tag",
   cooldowns: 5
 };
 
-module.exports.onStart = async function ({ api, message, event }) {
+module.exports.onStart = async function ({ api, event }) {
   const { threadID, senderID, messageReply, body } = event;
+  const lang = global.getText("commands", "tag");
 
   const args = (body || "").trim().split(/\s+/);
   const sub = (args[1] || "").toLowerCase();
 
   if (sub === "all") {
+    let threadInfo;
     try {
-      const threadInfo = await api.getThreadInfo(threadID);
-      const botID = String(api.getCurrentUserID());
-      const participants = (threadInfo.userInfo || []).filter(
-        p => String(p.id) !== botID && String(p.id) !== String(senderID)
-      );
-
-      if (participants.length === 0) {
-        return message.reply("❌ Tag করার মতো কেউ নেই।");
-      }
-
-      const CHUNK = 20;
-      for (let i = 0; i < participants.length; i += CHUNK) {
-        const chunk = participants.slice(i, i + CHUNK);
-        const mentions = chunk.map(p => ({
-          tag: `@${p.name}`,
-          id: p.id,
-          fromIndex: 0
-        }));
-
-        const tagText = chunk.map(p => `@${p.name}`).join(" ");
-        await api.sendMessage({ body: tagText, mentions }, threadID);
-      }
+      threadInfo = await api.getThreadInfo(threadID);
     } catch (err) {
-      return message.reply("❌ সবাইকে tag করতে পারিনি।");
+      return api.sendMessage(lang.tagAllError, threadID, event.messageID);
+    }
+
+    const botID = String(api.getCurrentUserID());
+    const participants = (threadInfo.userInfo || []).filter(
+      p => String(p.id) !== botID && String(p.id) !== String(senderID)
+    );
+
+    if (participants.length === 0) {
+      return api.sendMessage(lang.noParticipants, threadID, event.messageID);
+    }
+
+    const everyoneText = "@everyone";
+    const mentions = participants.map(p => ({
+      tag: everyoneText,
+      id: p.id,
+      fromIndex: 0,
+      length: everyoneText.length
+    }));
+
+    try {
+      await api.sendMessage({ body: everyoneText, mentions }, threadID);
+    } catch (err) {
+      return api.sendMessage(lang.tagAllError, threadID, event.messageID);
     }
     return;
   }
@@ -59,20 +63,20 @@ module.exports.onStart = async function ({ api, message, event }) {
 
     const tagText = `@${targetName}`;
     const customMsg = args.slice(1).join(" ").trim();
-    const body = customMsg ? `${tagText} ${customMsg}` : tagText;
+    const msgBody = customMsg ? `${tagText} ${customMsg}` : tagText;
 
-    return api.sendMessage(
-      {
-        body,
-        mentions: [{ tag: tagText, id: targetID, fromIndex: 0 }]
-      },
-      threadID
-    );
+    try {
+      return api.sendMessage(
+        {
+          body: msgBody,
+          mentions: [{ tag: tagText, id: targetID, fromIndex: 0, length: tagText.length }]
+        },
+        threadID
+      );
+    } catch (err) {
+      return api.sendMessage(lang.replyError, threadID, event.messageID);
+    }
   }
 
-  return message.reply(
-    "❓ কীভাবে ব্যবহার করবে:\n\n" +
-    "• /tag all → সবাইকে mention করবে\n" +
-    "• কোনো message এ reply করে /tag → সেই ব্যক্তিকে mention করবে"
-  );
+  return api.sendMessage(lang.usage, threadID, event.messageID);
 };

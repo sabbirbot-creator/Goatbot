@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "restart",
-  version: "1.0.0",
+  version: "1.1.0",
   hasPermssion: 2,
   credits: "sabbir",
   description: "Bot restart করো",
@@ -10,18 +10,16 @@ module.exports.config = {
   cooldowns: 5
 };
 
-module.exports.onStart = async function ({ api, message, event }) {
-  const adminList = global.GoatBot?.config?.adminBot || global.GoatBot?.config?.adminID || [];
-  const senderID = event.senderID;
+module.exports.onStart = async function ({ api, event }) {
+  const { senderID, threadID, messageID } = event;
+  const lang = global.getText("commands", "restart");
+  const adminList = (global.GoatBot?.config?.adminBot || global.GoatBot?.config?.adminID || []).map(String);
 
-  if (!adminList.includes(senderID) && !adminList.includes(String(senderID))) {
-    return message.reply("❌ শুধুমাত্র Admin এই command ব্যবহার করতে পারবে!");
+  if (!adminList.includes(String(senderID))) {
+    return api.sendMessage(lang.noPermission, threadID, messageID);
   }
 
-  await message.reply(
-    `🔄 Bot restart হচ্ছে...\n` +
-    `⏳ কিছুক্ষণ অপেক্ষা করুন।`
-  );
+  await api.sendMessage(lang.restarting, threadID, messageID);
 
   setTimeout(() => {
     process.exit(2);
