@@ -1,0 +1,80 @@
+{
+  "botName": "SABBIR CHAT BOT",
+  "prefix": "/",
+  "adminID": [
+    "61580333997984"
+  ],
+  "adminBot": [
+    "61580333997984"
+  ],
+  "developer": "Md ariful islam sabbir",
+  "fcaOption": {
+    "forceLogin": true,
+    "listenEvents": true,
+    "selfListen": false,
+    "online": true,
+    "autoReconnect": true,
+    "emitReady": true,
+    "autoMarkDelivery": true,
+    "autoMarkRead": true
+  },
+  "optionsFca": {
+    "forceLogin": true,
+    "listenEvents": true,
+    "selfListen": false,
+    "online": true,
+    "autoReconnect": true,
+    "emitReady": true,
+    "autoMarkDelivery": true,
+    "autoMarkRead": true
+  },
+  "database": {
+    "autoSyncWhenStart": false
+  },
+  "serverUptime": {
+    "enable": false,
+    "port": 3000
+  },
+  "dashBoard": {
+    "enable": false,
+    "port": 3000
+  },
+  "restartListenMqtt": {
+    "enable": false,
+    "logNoti": false,
+    "timeRestart": 7200000
+  },
+  "autoUptime": {
+    "enable": false,
+    "url": "",
+    "timeInterval": 180
+  },
+  "adminOnly": {
+    "enable": false,
+    "ignoreCommand": []
+  },
+  "hideNotiMessage": {
+    "userBanned": true,
+    "adminOnly": true,
+    "threadBanned": true
+  },
+  "logEvents": {
+    "disableAll": false,
+    "message": true,
+    "message_reply": true,
+    "message_reaction": true,
+    "typ": false,
+    "read_receipt": false,
+    "presence": false,
+    "log:subscribe": true,
+    "log:unsubscribe": true,
+    "log:thread-name": true,
+    "log:thread-icon": true,
+    "log:thread-color": true,
+    "log:user-nickname": true,
+    "log:thread-admins": true,
+    "log:thread-approval-mode": true,
+    "event": true,
+    "ready": true
+  }
+}
