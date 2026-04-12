@@ -5,7 +5,7 @@ module.exports.config = {
   version: "1.0.0",
   hasPermssion: 0,
   credits: "sabbir",
-  description: "Bot এর সব তথ্য দেখাও",
+  description: "Bot ও Admin এর সব তথ্য দেখাও",
   usePrefix: true,
   category: "Info",
   usages: "info",
@@ -25,18 +25,23 @@ module.exports.onStart = async function ({ api, message }) {
   const now = moment().tz("Asia/Dhaka").format("DD/MM/YYYY hh:mm A");
 
   return message.reply(
-    `╔══✨ BOT INFO ✨═══╗\n\n` +
+    `╔══✨ BOT INFO ✨══╗\n\n` +
     `🤖 নাম: ${botName}\n` +
     `🔢 Bot ID: ${botID}\n` +
-    `👑 Owner: Ariful Islam Sabbir\n` +
     `📌 Prefix: ${prefix}\n` +
     `📦 Commands: ${totalCmds}টি\n` +
     `⏱ Uptime: ${days}d ${hours}h ${minutes}m\n` +
     `🕐 সময়: ${now}\n` +
     `⚙️ Node: ${process.version}\n\n` +
     `╠══════════════════════╣\n` +
-    `   💖 Powered by\n` +
-    `   Sabbir Chat Bot\n` +
+    `  👑 ADMIN INFO\n` +
+    `╠══════════════════════╣\n\n` +
+    `👤 নাম: Md Ariful Islam Sabbir\n` +
+    `📚 ক্লাস: 12+\n` +
+    `☪️ ধর্ম: Islam\n` +
+    `💔 সম্পর্ক: Single\n\n` +
+    `╠══════════════════════╣\n` +
+    `  💖 Powered by Sabbir Chat Bot\n` +
     `╚══════════════════════╝`
   );
 };
