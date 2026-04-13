@@ -7,18 +7,15 @@ const fs = require("fs-extra");
 const { execSync } = require('child_process');
 const path = require("path");
 
-// শুরুতে ফাইলগুলো রিকয়ার করে নিচ্ছি
 const logger = require('./utils/logger.js');
 const logHandler = require("./utils/Log.js"); 
 
 process.env.BLUEBIRD_W_FORGOTTEN_RETURN = 0;
 
-// সরাসরি পাথ সেট করা
 const dirConfig = path.normalize(`${__dirname}/config.json`);
 const dirConfigCommands = path.normalize(`${__dirname}/configCommands.json`);
 const dirAccount = path.normalize(`${__dirname}/account.txt`);
 
-// কনফিগ ফাইলগুলো লোড করা
 const config = require(dirConfig);
 const configCommands = require(dirConfigCommands);
 
@@ -84,7 +81,6 @@ global.client = {
         commandBanned: configCommands.commandBanned || {}
 };
 
-// Utils মডিউল সেটআপ
 const { colors } = logger;
 
 function getText(objectLanguage, key, ...args) {
@@ -335,7 +331,6 @@ global.temp = {
     createUserDataError: []
 };
 
-// মেইন ফাংশন রান করা
 (async () => {
         require(`./bot/login/login.js`);
 })();

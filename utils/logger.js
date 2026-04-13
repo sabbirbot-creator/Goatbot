@@ -4,7 +4,7 @@ const botName = "SABBIR CHAT BOT";
 const logPrefix = `[ ${botName} ] »`;
 
 const colors = {
-    hex: (color) => (text) => text, // হেক্স এরর বন্ধ করার জন্য
+    hex: (color) => (text) => text,
     greenBright: (text) => `\x1b[92m${text}\x1b[0m`,
     yellowBright: (text) => `\x1b[93m${text}\x1b[0m`,
     redBright: (text) => `\x1b[91m${text}\x1b[0m`,

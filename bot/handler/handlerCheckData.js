@@ -7,7 +7,6 @@ module.exports = async function (usersData, threadsData, event) {
 	const { threadID } = event;
 	const senderID = event.senderID || event.author || event.userID;
 
-	// ———————————— CHECK THREAD DATA ———————————— //
 	if (threadID) {
 		try {
 			if (global.temp.createThreadDataError.includes(threadID))
@@ -34,7 +33,6 @@ module.exports = async function (usersData, threadsData, event) {
 	}
 
 
-	// ————————————— CHECK USER DATA ————————————— //
 	if (senderID) {
 		try {
 			const findInCreatingUserData = creatingUserData.find(u => u.userID == senderID);

@@ -1,7 +1,5 @@
 const fs = require("fs-extra");
 const nullAndUndefined = [undefined, null];
-// const { config } = global.GoatBot;
-// const { utils } = global;
 
 function getType(obj) {
         return Object.prototype.toString.call(obj).slice(8, -1);
@@ -61,12 +59,6 @@ function getRoleConfig(utils, command, isGroup, threadData, commandName) {
         }
 
         return roleConfig;
-        // {
-        //      onChat,
-        //      onStart,
-        //      onReaction,
-        //      onReply
-        // }
 }
 
 function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, commandName, message, lang) {
@@ -94,7 +86,6 @@ function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, 
                 return true;
         }
 
-        // ==========    Check Thread    ========== //
         if (isGroup == true) {
                 if (
                         threadData.data.onlyAdminBox === true
@@ -118,7 +109,6 @@ function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, 
         }
         return false;
 }
-
 
 function createGetText2(langCode, pathCustomLang, prefix, command) {
         const commandType = command.config.countDown ? "command" : "command event";
@@ -213,15 +203,12 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                 */
                 let isUserCallCommand = false;
                 async function onStart() {
-                        // —————————————— CHECK USE BOT —————————————— //
                         if (!body || !body.startsWith(prefix))
                                 return;
                         const dateNow = Date.now();
                         const args = body.slice(prefix.length).trim().split(/ +/);
-                        // ————————————  CHECK HAS COMMAND ——————————— //
                         let commandName = args.shift().toLowerCase();
                         let command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
-                        // ———————— CHECK ALIASES SET BY GROUP ———————— //
                         const aliasesData = threadData.data.aliases || {};
                         for (const cmdName in aliasesData) {
                                 if (aliasesData[cmdName].includes(commandName)) {
@@ -229,10 +216,8 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         break;
                                 }
                         }
-                        // ————————————— SET COMMAND NAME ————————————— //
                         if (command)
                                 commandName = command.config.name;
-                        // ——————— FUNCTION REMOVE COMMAND NAME ———————— //
                         function removeCommandNameFromBody(body_, prefix_, commandName_) {
                                 if (arguments.length) {
                                         if (typeof body_ != "string")
@@ -248,7 +233,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         return body.replace(new RegExp(`^${prefix}(\\s+|)${commandName}`, "i"), "").trim();
                                 }
                         }
-                        // —————  CHECK BANNED OR ONLY ADMIN BOX  ————— //
                         if (isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, commandName, message, langCode))
                                 return;
                         if (!command)
@@ -260,7 +244,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         );
                                 else
                                         return true;
-                        // ————————————— CHECK PERMISSION ———————————— //
                         const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
                         const needRole = roleConfig.onStart;
 
@@ -275,7 +258,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         return true;
                                 }
                         }
-                        // ———————————————— countDown ———————————————— //
                         if (!client.countDown[commandName])
                                 client.countDown[commandName] = {};
                         const timestamps = client.countDown[commandName];
@@ -288,7 +270,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                 if (dateNow < expirationTime)
                                         return await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "waitingForCommand", ((expirationTime - dateNow) / 1000).toString().slice(0, 3)));
                         }
-                        // ——————————————— RUN COMMAND ——————————————— //
                         const time = getTime("DD/MM/YYYY HH:mm:ss");
                         isUserCallCommand = true;
                         try {
@@ -319,7 +300,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                         }
                 }
 
-
                 /*
                  +------------------------------------------------+
                  |                    ON CHAT                     |
@@ -334,7 +314,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         continue;
                                 const commandName = command.config.name;
 
-                                // —————————————— CHECK PERMISSION —————————————— //
                                 const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
                                 const needRole = roleConfig.onChat;
                                 if (needRole > role)
@@ -377,7 +356,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         });
                         }
                 }
-
 
                 /*
                  +------------------------------------------------+
@@ -490,7 +468,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                         }
                 }
 
-
                 /* 
                  +------------------------------------------------+
                  |                    ON REPLY                    |
@@ -515,7 +492,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                 return log.err("onReply", `Command "${commandName}" not found`, Reply);
                         }
 
-                        // —————————————— CHECK PERMISSION —————————————— //
                         const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
                         const needRole = roleConfig.onReply;
                         if (needRole > role) {
@@ -554,7 +530,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                         }
                 }
 
-
                 /*
                  +------------------------------------------------+
                  |                   ON REACTION                  |
@@ -577,7 +552,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                 return log.err("onReaction", `Command "${commandName}" not found`, Reaction);
                         }
 
-                        // —————————————— CHECK PERMISSION —————————————— //
                         const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
                         const needRole = roleConfig.onReaction;
                         if (needRole > role) {
@@ -591,7 +565,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                         return true;
                                 }
                         }
-                        // —————————————————————————————————————————————— //
 
                         const time = getTime("DD/MM/YYYY HH:mm:ss");
                         try {
@@ -616,7 +589,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                 await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "errorOccurred4", time, commandName, removeHomeDir(err.stack ? err.stack.split("\n").slice(0, 5).join("\n") : JSON.stringify(err, null, 2))));
                         }
                 }
-
 
                 /*
                  +------------------------------------------------+
@@ -650,7 +622,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                                 }
                         }
                 }
-
 
                 /*
                  +------------------------------------------------+
@@ -711,7 +682,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                  +------------------------------------------------+
                 */
                 async function presence() {
-                        // Your code here
                 }
 
                 /*
@@ -720,7 +690,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                  +------------------------------------------------+
                 */
                 async function read_receipt() {
-                        // Your code here
                 }
 
                 /*
@@ -729,7 +698,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                  +------------------------------------------------+
                 */
                 async function typ() {
-                        // Your code here
                 }
 
                 return {
