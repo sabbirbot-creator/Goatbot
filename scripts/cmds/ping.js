@@ -2,7 +2,7 @@ module.exports.config = {
   name: "ping",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "Bot এর response time দেখাও",
   usePrefix: true,
   category: "Info",

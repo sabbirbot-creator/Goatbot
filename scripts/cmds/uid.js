@@ -2,7 +2,7 @@ module.exports.config = {
   name: "uid",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "নিজের বা অন্যের UID দেখাও",
   usePrefix: true,
   category: "Info",

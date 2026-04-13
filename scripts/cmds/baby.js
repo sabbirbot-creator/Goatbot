@@ -7,7 +7,7 @@ module.exports.config = {
   name: "teach",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "Baby Bot কে নতুন কথা শেখাও",
   usePrefix: true,
   category: "Chat",

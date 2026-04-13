@@ -2,7 +2,7 @@ module.exports.config = {
   name: "tag",
   version: "1.1.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "Mention করো — reply দিলে সেই ব্যক্তিকে, /tag all দিলে @everyone দিয়ে সবাইকে",
   usePrefix: true,
   category: "Group",

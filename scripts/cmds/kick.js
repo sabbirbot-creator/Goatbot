@@ -2,7 +2,7 @@ module.exports.config = {
   name: "kick",
   version: "1.3.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "Group থেকে কাউকে বের করো",
   usePrefix: true,
   category: "Group",

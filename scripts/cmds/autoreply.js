@@ -6,7 +6,7 @@ module.exports.config = {
   name: "autoreplybot",
   version: "1.1.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   hidden: true,
   usePrefix: false,
   category: "Chat",

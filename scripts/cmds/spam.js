@@ -69,7 +69,7 @@ module.exports.config = {
   name: "spam",
   version: "1.1.0",
   role: 0,
-  credits: "Sabbir",
+  credits: "Ariful Islam Sabbir",
   hasPermssion: 0,
   hidden: true,
   usePrefix: false,

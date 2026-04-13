@@ -2,7 +2,7 @@ module.exports.config = {
   name: "restart",
   version: "1.1.0",
   hasPermssion: 2,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "Bot restart করো",
   usePrefix: true,
   category: "Admin",

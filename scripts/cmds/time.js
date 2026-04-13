@@ -4,7 +4,7 @@ module.exports.config = {
   name: "time",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "বর্তমান সময় ও তারিখ দেখাও",
   usePrefix: true,
   category: "Info",

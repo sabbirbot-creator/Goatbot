@@ -9,7 +9,7 @@ module.exports.config = {
     onStart: 0,
     onChat: 0
   },
-  credits: "Sabbir",
+  credits: "Ariful Islam Sabbir",
   usePrefix: true,
   category: "System",
   countDown: 3,

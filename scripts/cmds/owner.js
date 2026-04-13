@@ -4,7 +4,7 @@ module.exports.config = {
   name: "owner",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "Bot এর Owner এর তথ্য দেখাও",
   usePrefix: true,
   category: "Info",

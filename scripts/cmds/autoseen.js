@@ -2,7 +2,7 @@ module.exports.config = {
   name: "autoseen",
   version: "3.0.0",
   role: 0,
-  credits: "Sabbir",
+  credits: "Ariful Islam Sabbir",
   hidden: true,
   usePrefix: false,
   category: "System",

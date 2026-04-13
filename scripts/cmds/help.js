@@ -2,7 +2,7 @@ module.exports.config = {
   name: "help",
   version: "1.1.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "সব command এর লিস্ট দেখাও",
   usePrefix: true,
   category: "Info",

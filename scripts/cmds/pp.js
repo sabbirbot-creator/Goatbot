@@ -6,7 +6,7 @@ module.exports.config = {
   name: "pp",
   version: "1.0.0",
   hasPermssion: 0,
-  credits: "sabbir",
+  credits: "Ariful Islam Sabbir",
   description: "নিজের বা অন্যের প্রোফাইল পিকচার দেখাও",
   usePrefix: true,
   category: "Info",
