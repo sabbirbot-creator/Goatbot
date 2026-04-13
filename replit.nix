@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.comma
     pkgs.sqlite
     pkgs.node-gyp
     pkgs.python3
