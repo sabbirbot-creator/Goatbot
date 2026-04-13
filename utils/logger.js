@@ -22,19 +22,6 @@ const colors = {
 
 const getCurrentTime = () => colors.gray(moment().tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY"));
 
-if (!global.__sabbirConsolePatched) {
-    global.__sabbirConsolePatched = true;
-}
-
-function printASCII() {
-    if (global.__sabbirAsciiPrinted) return;
-    global.__sabbirAsciiPrinted = true;
-    console.clear();
-    process.stdout.write(`${colors.cyan(colors.bold("SABBIR"))}\n\n`);
-}
-
-printASCII();
-
 if (!global.__sabbirStreamPatched) {
     global.__sabbirStreamPatched = true;
     const patchStream = (stream) => {
