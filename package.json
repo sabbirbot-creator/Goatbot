@@ -1,7 +1,7 @@
 {
-  "name": "sabbir goat bot ",
+  "name": "goat-bot-v2",
   "version": "1.5.35",
-  "description": ".",
+  "description": "A simple Bot chat messenger using personal account. Made by NTKhang.",
   "main": "Sabbir.js",
   "engines": {
     "node": "20.x",
@@ -68,3 +68,25 @@
   },
   "keywords": [],
   "bugs": {
+    "url": "https://github.com/ntkhang03/Goat-Bot-V2/issues"
+  },
+  "homepage": "https://github.com/ntkhang03/Goat-Bot-V2#readme",
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-node": "^4.1.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "javascript-obfuscator": "^4.1.1",
+    "npm-size": "^1.3.0",
+    "pm2": "^5.3.1",
+    "prettier": "^3.2.5",
+    "prompt-checkbox": "^2.2.0",
+    "terser": "^5.30.0"
+  }
+}
