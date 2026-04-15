@@ -10,9 +10,9 @@ module.exports.config = {
   shortDescription: "DM ও Group-এ message automatic seen করে"
 };
 
-module.exports.config = {
+Module.exports.config = {
   name: "autoseen",
-  version: "3.1.0",
+  version: "3.0.0",
   role: 0,
   credits: "Ariful Islam Sabbir",
   hidden: true,
@@ -25,12 +25,12 @@ module.exports.config = {
 module.exports.onStart = async function () {};
 
 module.exports.onChat = async function ({ api, event }) {
-  if (event.body) {
-    try {
-      // এটি মেসেজটিকে সিন (Seen) হিসেবে মার্ক করবে
-      await api.markAsRead(event.threadID);
-    } catch (e) {
-      // console.log(e);
-    }
+  try {
+    await api.markAsSeen(Date.now());
+    await api.markAsRead(event.threadID, true);
+  } catch (e) {
+    // silent
   }
 };
+
+Autoseen.js
