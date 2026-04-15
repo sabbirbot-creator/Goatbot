@@ -72,31 +72,6 @@ module.exports.onStart = async function ({ api, event, message, args }) {
     );
   }
 
-  // Format 2: /teach list
-  if (sub === "list") {
-    const db = loadDB();
-    const keys = Object.keys(db);
-    if (keys.length === 0) return message.reply("📭 এখনো কিছু শেখানো হয়নি!\n\nশেখাতে: /teach q <প্রশ্ন> a <উত্তর>");
-    let text = `📚 মোট ${keys.length}টি Q&A:\n\n`;
-    keys.slice(0, 20).forEach((q, i) => {
-      text += `${i + 1}. ❓ ${q}\n   ✅ ${db[q]}\n\n`;
-    });
-    if (keys.length > 20) text += `...আরো ${keys.length - 20}টি আছে`;
-    return message.reply(text.trim());
-  }
-
-  // Format 3: /teach del <প্রশ্ন>
-  if (sub === "del") {
-    const toDelete = args.slice(1).join(" ").trim();
-    if (!toDelete) return message.reply("❌ কোন প্রশ্নটা মুছবে লিখো!\nযেমন: /teach del hi");
-    const db = loadDB();
-    const key = Object.keys(db).find(k => normalize(k) === normalize(toDelete));
-    if (!key) return message.reply(`❌ "${toDelete}" নামে Q&A পাওয়া যায়নি!`);
-    delete db[key];
-    saveDB(db);
-    return message.reply(`✅ "${key}" মুছে ফেলা হয়েছে!`);
-  }
-
   // Format 4: /teach q <প্রশ্ন> a <উত্তর>
   if (sub === "q") {
     const restArgs = args.slice(1);
@@ -139,8 +114,8 @@ module.exports.onStart = async function ({ api, event, message, args }) {
     "   (reply করা message = প্রশ্ন, তোমার লেখা = উত্তর)\n\n" +
     "2️⃣ সরাসরি:\n" +
     "   /teach q <প্রশ্ন> a <উত্তর>\n\n" +
-    "📋 সব দেখতে: /teach list\n" +
-    "🗑️ মুছতে: /teach del <প্রশ্ন>"
+    "" +
+    "🗑️ মুছতে:বস সাব্বির কে মেসেজ দিন"
   );
 };
 
