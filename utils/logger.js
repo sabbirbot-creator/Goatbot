@@ -1,26 +1,26 @@
-const moment = require("moment-timezone");
+"use strict";
 
-const botName = "SABBIR CHAT BOT";
-const logPrefix = `[ ${botName} ] »`;
+const moment = require("moment-timezone");
+const { TAG } = require("./branding");
 
 const colors = {
-    hex: (color) => (text) => text,
-    greenBright: (text) => `\x1b[92m${text}\x1b[0m`,
-    yellowBright: (text) => `\x1b[93m${text}\x1b[0m`,
-    redBright: (text) => `\x1b[91m${text}\x1b[0m`,
-    cyanBright: (text) => `\x1b[96m${text}\x1b[0m`,
-    blueBright: (text) => `\x1b[94m${text}\x1b[0m`,
-    yellow: (text) => `\x1b[33m${text}\x1b[0m`,
-    cyan: (text) => `\x1b[36m${text}\x1b[0m`,
-    gray: (text) => `\x1b[90m${text}\x1b[0m`,
-    green: (text) => `\x1b[32m${text}\x1b[0m`,
-    blue: (text) => `\x1b[34m${text}\x1b[0m`,
-    red: (text) => `\x1b[31m${text}\x1b[0m`,
-    white: (text) => `\x1b[37m${text}\x1b[0m`,
-    bold: (text) => `\x1b[1m${text}\x1b[0m`
+    hex: () => (text) => text,
+    greenBright: (text) => text,
+    yellowBright: (text) => text,
+    redBright: (text) => text,
+    cyanBright: (text) => text,
+    blueBright: (text) => text,
+    yellow: (text) => text,
+    cyan: (text) => text,
+    gray: (text) => text,
+    green: (text) => text,
+    blue: (text) => text,
+    red: (text) => text,
+    white: (text) => text,
+    bold: (text) => text
 };
 
-const getCurrentTime = () => colors.gray(moment().tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY"));
+const getCurrentTime = () => moment().tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY");
 
 if (!global.__sabbirStreamPatched) {
     global.__sabbirStreamPatched = true;
@@ -28,8 +28,8 @@ if (!global.__sabbirStreamPatched) {
         const originalWrite = stream.write.bind(stream);
         let pending = "";
         const formatOutputLine = (line) => {
-            if (!line.trim() || line.trimStart().startsWith(logPrefix) || /^\x1b\[[0-9;?]*[A-Za-z]$/.test(line)) return line;
-            return `${logPrefix} ${line}`;
+            if (!line.trim() || line.trimStart().startsWith(TAG) || /^\x1b\[[0-9;?]*[A-Za-z]$/.test(line)) return line;
+            return `${TAG}${line}`;
         };
         stream.write = (chunk, encoding, callback) => {
             if (typeof encoding === "function") {
@@ -61,7 +61,7 @@ function logError(prefix, message) {
         message = prefix;
         prefix = "ERROR";
     }
-        console.log(`${getCurrentTime()} ${colors.redBright(`${prefix}:`)}`, message);
+    console.log(`${getCurrentTime()} ${prefix}:`, message);
 }
 
 module.exports = {
@@ -73,27 +73,27 @@ module.exports = {
             message = prefix;
             prefix = "WARN";
         }
-        console.log(`${getCurrentTime()} ${colors.yellowBright(`${prefix}:`)}`, message);
+        console.log(`${getCurrentTime()} ${prefix}:`, message);
     },
     info: function (prefix, message) {
         if (message === undefined) {
             message = prefix;
             prefix = "INFO";
         }
-        console.log(`${getCurrentTime()} ${colors.greenBright(`${prefix}:`)}`, message);
+        console.log(`${getCurrentTime()} ${prefix}:`, message);
     },
     success: function (prefix, message) {
         if (message === undefined) {
             message = prefix;
             prefix = "SUCCESS";
         }
-        console.log(`${getCurrentTime()} ${colors.cyanBright(`${prefix}:`)}`, message);
+        console.log(`${getCurrentTime()} ${prefix}:`, message);
     },
     master: function (prefix, message) {
         if (message === undefined) {
             message = prefix;
             prefix = "MASTER";
         }
-        console.log(`${getCurrentTime()} ${colors.hex("#eb6734")(`${prefix}:`)}`, message);
+        console.log(`${getCurrentTime()} ${prefix}:`, message);
     }
 };
