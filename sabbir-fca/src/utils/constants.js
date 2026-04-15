@@ -2,9 +2,7 @@
 "use strict";
 
 const chalk = require("chalk");
-const gradient = require("gradient-string");
-const echaceb = gradient(["#0061ff", "#681297"]);
-const ws = echaceb("ws3-fca");
+const ws = "ws3-fca";
 
 let h;
 const i = {};

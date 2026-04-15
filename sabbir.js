@@ -188,82 +188,68 @@ function createMessageHelper(api, event) {
     const messageID = event.messageID;
 
     const helper = {
-        reply: function (msg, callback) {
-            return new Promise((resolve, reject) => {
-                const cb = (err, info) => {
-                    if (typeof callback === 'function') callback(err, info);
-                    if (err) reject(err);
-                    else resolve(info);
-                };
-                try {
-                    if (typeof msg === 'string') {
-                        api.sendMessage({ body: msg, mentions: [] }, threadID, cb, messageID);
-                    } else {
-                        api.sendMessage(msg, threadID, cb, messageID);
-                    }
-                } catch (e) { reject(e); }
-            });
+        reply: async function (msg, callback) {
+            try {
+                const msgObj = typeof msg === 'string' ? { body: msg, mentions: [] } : msg;
+                const info = await api.sendMessage(msgObj, threadID, messageID);
+                if (typeof callback === 'function') callback(null, info);
+                return info;
+            } catch (e) {
+                if (typeof callback === 'function') callback(e);
+                throw e;
+            }
         },
-        send: function (msg, tid, callback) {
+        send: async function (msg, tid, callback) {
             const targetThread = tid || threadID;
-            return new Promise((resolve, reject) => {
-                const cb = (err, info) => {
-                    if (typeof callback === 'function') callback(err, info);
-                    if (err) reject(err);
-                    else resolve(info);
-                };
-                try {
-                    api.sendMessage(msg, targetThread, cb);
-                } catch (e) { reject(e); }
-            });
+            try {
+                const msgObj = typeof msg === 'string' ? { body: msg, mentions: [] } : msg;
+                const info = await api.sendMessage(msgObj, targetThread);
+                if (typeof callback === 'function') callback(null, info);
+                return info;
+            } catch (e) {
+                if (typeof callback === 'function') callback(e);
+                throw e;
+            }
         },
-        unsend: function (msgID, callback) {
-            return new Promise((resolve, reject) => {
-                const cb = (err) => {
-                    if (typeof callback === 'function') callback(err);
-                    if (err) reject(err);
-                    else resolve();
-                };
-                try {
-                    api.unsendMessage(msgID, cb);
-                } catch (e) { reject(e); }
-            });
+        unsend: async function (msgID, callback) {
+            try {
+                const info = await api.unsendMessage(msgID);
+                if (typeof callback === 'function') callback(null, info);
+                return info;
+            } catch (e) {
+                if (typeof callback === 'function') callback(e);
+                throw e;
+            }
         },
-        reaction: function (emoji, msgID, callback) {
-            return new Promise((resolve, reject) => {
-                const cb = (err) => {
-                    if (typeof callback === 'function') callback(err);
-                    if (err) reject(err);
-                    else resolve();
-                };
-                try {
-                    api.setMessageReaction(emoji, msgID || messageID, cb, true);
-                } catch (e) { reject(e); }
-            });
+        reaction: async function (emoji, msgID, callback) {
+            try {
+                const info = await api.setMessageReaction(emoji, msgID || messageID);
+                if (typeof callback === 'function') callback(null, info);
+                return info;
+            } catch (e) {
+                if (typeof callback === 'function') callback(e);
+                throw e;
+            }
         },
-        addUserToGroup: function (userID, tid, callback) {
-            return new Promise((resolve, reject) => {
-                const cb = (err) => {
-                    if (typeof callback === 'function') callback(err);
-                    if (err) reject(err);
-                    else resolve();
-                };
-                try {
-                    api.addUserToGroup(userID, tid || threadID, cb);
-                } catch (e) { reject(e); }
-            });
+        addUserToGroup: async function (userID, tid, callback) {
+            try {
+                const info = await api.addUserToGroup(userID, tid || threadID);
+                if (typeof callback === 'function') callback(null, info);
+                return info;
+            } catch (e) {
+                if (typeof callback === 'function') callback(e);
+                throw e;
+            }
         },
-        removeUserFromGroup: function (userID, tid, callback) {
-            return new Promise((resolve, reject) => {
-                const cb = (err) => {
-                    if (typeof callback === 'function') callback(err);
-                    if (err) reject(err);
-                    else resolve();
-                };
-                try {
-                    api.removeUserFromGroup(userID, tid || threadID, cb);
-                } catch (e) { reject(e); }
-            });
+        removeUserFromGroup: async function (userID, tid, callback) {
+            try {
+                const info = await api.removeUserFromGroup(userID, tid || threadID);
+                if (typeof callback === 'function') callback(null, info);
+                return info;
+            } catch (e) {
+                if (typeof callback === 'function') callback(e);
+                throw e;
+            }
         },
         SyntaxError: null
     };
