@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "tag",
-  version: "1.1.0",
+  version: "1.2.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
   description: "Mention করো — reply দিলে সেই ব্যক্তিকে, /tag all দিলে @everyone দিয়ে সবাইকে",
@@ -26,9 +26,22 @@ module.exports.onStart = async function ({ api, event }) {
     }
 
     const botID = String(api.getCurrentUserID());
-    const participants = (threadInfo.userInfo || []).filter(
-      p => String(p.id) !== botID && String(p.id) !== String(senderID)
-    );
+
+    const participants = [];
+
+    if (threadInfo.userInfo && Array.isArray(threadInfo.userInfo) && threadInfo.userInfo.length > 0) {
+      for (const p of threadInfo.userInfo) {
+        if (String(p.id) !== botID && String(p.id) !== String(senderID)) {
+          participants.push({ id: p.id, name: p.name || "User" });
+        }
+      }
+    } else if (threadInfo.participantIDs && Array.isArray(threadInfo.participantIDs)) {
+      for (const id of threadInfo.participantIDs) {
+        if (String(id) !== botID && String(id) !== String(senderID)) {
+          participants.push({ id, name: "User" });
+        }
+      }
+    }
 
     if (participants.length === 0) {
       return api.sendMessage(lang.noParticipants, threadID, event.messageID);

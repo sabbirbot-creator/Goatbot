@@ -10,27 +10,11 @@ module.exports.config = {
   shortDescription: "DM ও Group-এ message automatic seen করে"
 };
 
-Module.exports.config = {
-  name: "autoseen",
-  version: "3.0.0",
-  role: 0,
-  credits: "Ariful Islam Sabbir",
-  hidden: true,
-  usePrefix: false,
-  category: "System",
-  countDown: 0,
-  shortDescription: "DM ও Group-এ message automatic seen করে"
-};
-
 module.exports.onStart = async function () {};
 
 module.exports.onChat = async function ({ api, event }) {
   try {
     await api.markAsSeen(Date.now());
     await api.markAsRead(event.threadID, true);
-  } catch (e) {
-    // silent
-  }
+  } catch (e) {}
 };
-
-Autoseen.js
