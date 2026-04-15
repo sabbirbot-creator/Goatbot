@@ -13,7 +13,7 @@
   ],
   "developer": "Md ariful islam sabbir",
   "fcaOption": {
-    "forceLogin": true,
+    "forceLogin": false,
     "listenEvents": true,
     "selfListen": false,
     "online": true,
