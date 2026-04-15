@@ -192,20 +192,22 @@ module.exports = (defaultFuncs, api, ctx) => {
       form["tags[0]"] = "hot_emoji_size:" + msg.emojiSize;
     } 
     if (msg.mentions) {
+      const emptyChar = '\u200E';
+      form["body"] = emptyChar + (msg.body || "");
       for (let i = 0; i < msg.mentions.length; i++) {
         const mention = msg.mentions[i];
         const tag = mention.tag;
         if (typeof tag !== "string") {
           throw new Error("Mention tags must be strings.");
         }
-        const offset = msg.body.indexOf(tag, mention.fromIndex || 0);
+        const offset = typeof mention.fromIndex !== 'undefined'
+          ? mention.fromIndex
+          : (msg.body || "").indexOf(tag);
         if (offset < 0) utils.warn("handleMention", 'Mention for "' + tag + '" not found in message string.');
         if (!mention.id) utils.warn("handleMention", "Mention id should be non-null.");
         const id = mention.id || 0;
-        const emptyChar = '\u200E';
-        form["body"] = emptyChar + msg.body;
         form["profile_xmd[" + i + "][offset]"] = offset + 1;
-        form["profile_xmd[" + i + "][length]"] = tag.length;
+        form["profile_xmd[" + i + "][length]"] = mention.length || tag.length;
         form["profile_xmd[" + i + "][id]"] = id;
         form["profile_xmd[" + i + "][type]"] = "p";
       }

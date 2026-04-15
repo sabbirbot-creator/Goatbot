@@ -8,13 +8,6 @@ const utils = require('../../../utils');
  * @param {Object} ctx
  */
 module.exports = function (defaultFuncs, api, ctx) {
-  /**
-   * Marks a thread as read.
-   * @param {string} threadID - The ID of the thread to mark as read.
-   * @param {boolean} [read=true] - Whether to mark as read (true) or unread (false). Defaults to true.
-   * @param {Function} [callback] - The callback function.
-   * @returns {Promise<null|Error>} A Promise that resolves with null on success, or rejects with an Error.
-   */
   return async function markAsRead(threadID, read, callback) {
     if (
       utils.getType(read) === "Function" ||
@@ -23,72 +16,59 @@ module.exports = function (defaultFuncs, api, ctx) {
       callback = read;
       read = true;
     }
-    if (read == undefined) {
-      read = true;
-    }
+    if (read == undefined) read = true;
+    if (!callback) callback = () => {};
 
-    if (!callback) {
-      callback = () => {};
-    }
-
+    // Build form for HTTP endpoint
     const form = {};
+    form["ids[" + threadID + "]"] = read;
+    form["watermarkTimestamp"] = new Date().getTime();
+    form["shouldSendReadReceipt"] = true;
+    form["commerce_last_message_type"] = "";
 
     if (typeof ctx.globalOptions.pageID !== "undefined") {
       form["source"] = "PagesManagerMessagesInterface";
       form["request_user_id"] = ctx.globalOptions.pageID;
-      form["ids[" + threadID + "]"] = read;
-      form["watermarkTimestamp"] = new Date().getTime();
-      form["shouldSendReadReceipt"] = true;
-      form["commerce_last_message_type"] = "";
+    }
 
-      let resData;
-      try {
-        resData = await defaultFuncs
-          .post(
-            "https://www.facebook.com/ajax/mercury/change_read_status.php",
-            ctx.jar,
-            form,
-          )
-          .then(utils.saveCookies(ctx.jar))
-          .then(utils.parseAndCheckLogin(ctx, defaultFuncs));
-      } catch (e) {
-        callback(e);
-        return e;
-      }
+    // Try HTTP first
+    try {
+      const resData = await defaultFuncs
+        .post(
+          "https://www.facebook.com/ajax/mercury/change_read_status.php",
+          ctx.jar,
+          form
+        )
+        .then(utils.saveCookies(ctx.jar))
+        .then(utils.parseAndCheckLogin(ctx, defaultFuncs));
 
-      if (resData.error) {
-        const err = resData.error;
-        utils.error("markAsRead", err);
-        callback(err);
-        return err;
+      if (resData && resData.error) {
+        throw new Error(String(resData.error));
       }
 
       callback();
       return null;
-    } else {
+    } catch (httpErr) {
+      // Fallback: MQTT
       try {
         if (ctx.mqttClient) {
-          const err = await new Promise((r) =>
+          const err = await new Promise(function(r) {
             ctx.mqttClient.publish(
               "/mark_thread",
-              JSON.stringify({
-                threadID,
-                mark: "read",
-                state: read,
-              }),
+              JSON.stringify({ threadID: threadID, mark: "read", state: read }),
               { qos: 1, retain: false },
-              r,
-            ),
-          );
+              r
+            );
+          });
           if (err) throw err;
+          callback();
+          return null;
         } else {
-          throw {
-            error: "You can only use this function after you start listening.",
-          };
+          throw { error: "No MQTT client available." };
         }
-      } catch (e) {
-        callback(e);
-        return e;
+      } catch (mqttErr) {
+        callback(mqttErr);
+        return mqttErr;
       }
     }
   };

@@ -1,6 +1,6 @@
 module.exports.config = {
   name: "autoseen",
-  version: "5.0.0",
+  version: "6.0.0",
   role: 0,
   credits: "Ariful Islam Sabbir",
   hidden: true,
@@ -15,5 +15,8 @@ module.exports.onStart = async function () {};
 module.exports.onChat = async function ({ api, event }) {
   try {
     await api.markAsRead(event.threadID, true);
+  } catch (e) {}
+  try {
+    await api.markAsSeen(Date.now());
   } catch (e) {}
 };

@@ -23,13 +23,13 @@ const TEACH_URL = "https://sabbir-baby-api.onrender.com/api/teach";
 
 module.exports.config = {
   name: "teach",
-  version: "2.1.0",
+  version: "3.0.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
   description: "Bot কে প্রশ্ন-উত্তর শেখাও",
   usePrefix: true,
   category: "Chat",
-  usages: "/teach q <প্রশ্ন> a <উত্তর> | reply করে /teach ans",
+  usages: "reply করে /teach <উত্তর> | /teach q <প্রশ্ন> a <উত্তর>",
   cooldowns: 3
 };
 
@@ -37,32 +37,42 @@ module.exports.onStart = async function ({ api, event, message, args }) {
   const sub = (args[0] || "").toLowerCase();
   const { messageReply } = event;
 
-  if (sub === "ans") {
-    if (!messageReply || !messageReply.body) {
+  // Format 1: reply করে /teach <উত্তর> → সরাসরি শেখাও
+  if (messageReply && messageReply.body && sub !== "list" && sub !== "del" && sub !== "q") {
+    const question = messageReply.body.trim();
+    const answer = args.join(" ").trim();
+
+    if (!answer) {
       return message.reply(
-        "❌ কোনো message এ reply করোনি!\n\n" +
+        "❌ উত্তর লিখোনি!\n\n" +
         "📌 নিয়ম:\n" +
-        "  যে message টাকে প্রশ্ন বানাতে চাও,\n" +
-        "  সেটায় reply করে /teach ans লিখো"
+        "   যে message এ reply করলে সেটা হবে প্রশ্ন\n" +
+        "   /teach এর পরে লেখা হবে উত্তর\n\n" +
+        "✅ যেমন: (কারো message এ reply করে)\n" +
+        "   /teach আমি SABBIR BOT"
       );
     }
-    const question = messageReply.body.trim();
+
     if (!question) return message.reply("❌ Reply করা message এ text নেই!");
 
-    const sentMsg = await message.reply(
-      `❓ প্রশ্ন সেট হয়েছে:\n"${question}"\n\n` +
-      `✏️ এখন এই message এ reply করে শুধু উত্তরটা লিখো:`
-    );
-    if (sentMsg && sentMsg.messageID) {
-      global.GoatBot.onReply.set(sentMsg.messageID, {
-        commandName: "teach",
-        author: String(event.senderID),
-        pendingQuestion: question
+    const db = loadDB();
+    const existingKey = Object.keys(db).find(k => normalize(k) === normalize(question));
+    db[existingKey || question] = answer;
+    saveDB(db);
+
+    try {
+      await axios.post(TEACH_URL, { question, answer }, {
+        headers: { "Content-Type": "application/json" },
+        timeout: 8000
       });
-    }
-    return;
+    } catch (e) {}
+
+    return message.reply(
+      `✅ শেখানো হয়েছে!\n\n❓ প্রশ্ন: ${question}\n✅ উত্তর: ${answer}`
+    );
   }
 
+  // Format 2: /teach list
   if (sub === "list") {
     const db = loadDB();
     const keys = Object.keys(db);
@@ -75,17 +85,19 @@ module.exports.onStart = async function ({ api, event, message, args }) {
     return message.reply(text.trim());
   }
 
+  // Format 3: /teach del <প্রশ্ন>
   if (sub === "del") {
     const toDelete = args.slice(1).join(" ").trim();
     if (!toDelete) return message.reply("❌ কোন প্রশ্নটা মুছবে লিখো!\nযেমন: /teach del hi");
     const db = loadDB();
     const key = Object.keys(db).find(k => normalize(k) === normalize(toDelete));
-    if (!key) return message.reply(`❌ "${toDelete}" নামে কোনো Q&A পাওয়া যায়নি!`);
+    if (!key) return message.reply(`❌ "${toDelete}" নামে Q&A পাওয়া যায়নি!`);
     delete db[key];
     saveDB(db);
     return message.reply(`✅ "${key}" মুছে ফেলা হয়েছে!`);
   }
 
+  // Format 4: /teach q <প্রশ্ন> a <উত্তর>
   if (sub === "q") {
     const restArgs = args.slice(1);
     const aIdx = restArgs.indexOf("a");
@@ -119,41 +131,16 @@ module.exports.onStart = async function ({ api, event, message, args }) {
     );
   }
 
+  // Help message
   return message.reply(
     "📚 কীভাবে শেখাবে:\n\n" +
-    "1️⃣ সরাসরি:\n   /teach q <প্রশ্ন> a <উত্তর>\n\n" +
-    "2️⃣ কারো message এ reply করে:\n   Reply করে /teach ans লিখো\n   Bot যা জিজ্ঞেস করবে তাতে reply করো\n\n" +
+    "1️⃣ সহজ উপায় — কারো message এ reply করে:\n" +
+    "   /teach <উত্তর>\n" +
+    "   (reply করা message = প্রশ্ন, তোমার লেখা = উত্তর)\n\n" +
+    "2️⃣ সরাসরি:\n" +
+    "   /teach q <প্রশ্ন> a <উত্তর>\n\n" +
     "📋 সব দেখতে: /teach list\n" +
     "🗑️ মুছতে: /teach del <প্রশ্ন>"
-  );
-};
-
-module.exports.onReply = async function ({ api, event, Reply, message }) {
-  const { body, senderID } = event;
-  if (String(senderID) !== String(Reply.author)) return;
-
-  const answer = (body || "").trim();
-  if (!answer) return message.reply("❌ উত্তর খালি রাখা যাবে না!");
-
-  const question = Reply.pendingQuestion;
-  if (!question) return;
-
-  const db = loadDB();
-  const existingKey = Object.keys(db).find(k => normalize(k) === normalize(question));
-  db[existingKey || question] = answer;
-  saveDB(db);
-
-  Reply.delete();
-
-  try {
-    await axios.post(TEACH_URL, { question, answer }, {
-      headers: { "Content-Type": "application/json" },
-      timeout: 8000
-    });
-  } catch (e) {}
-
-  return message.reply(
-    `✅ শেখানো হয়েছে!\n\n❓ প্রশ্ন: ${question}\n✅ উত্তর: ${answer}`
   );
 };
 
