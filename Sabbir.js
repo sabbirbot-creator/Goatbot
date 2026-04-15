@@ -1,9 +1,13 @@
-const gradient = require("gradient-string");
-const figlet = require("figlet");
+const art = `
+  ____    _    ____  ____ ___ ____  
+ / ___|  / \  | __ )| __ )_ _|  _ \\ 
+ \\___ \\ / _ \\ |  _ \\|  _ \\| || |_) |
+  ___) / ___ \\| |_) | |_) | ||  _ < 
+ |____/_/   \\_\\____/|____/___|_| \\_\\
+`;
 
-const art = figlet.textSync("SABBIR", { font: "Big" });
-console.log(gradient.passion(art));
-console.log(gradient.pastel("  Owner: Ariful Islam Sabbir"));
+console.log(art);
+console.log("  Owner: Ariful Islam Sabbir");
 console.log();
 
 const { spawn } = require("child_process");
