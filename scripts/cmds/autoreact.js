@@ -49,7 +49,7 @@ module.exports.onStart = async function ({ event, args, message, threadsData }) 
 
     return message.reply(
       enabled
-        ? `✅ AutoReact চালু হয়েছে!\nএখন থেকে সব message এ random react দেওয়া হবে:\n${reactions.join("  ")}`
+        ? `✅ AutoReact চালু হয়েছে!`
         : "❌ AutoReact বন্ধ হয়েছে!"
     );
   } catch (e) {
