@@ -45,7 +45,7 @@ module.exports.onStart = async function ({ api, event }) {
   } else {
     leaveMsg =
       `😢 ${leftName} group ছেড়ে চলে গেছে!\n\n` +
-      `💔 তোমাকে মনে রাখব। বিদায়! 👋`;
+      ``;
   }
 
   try {
