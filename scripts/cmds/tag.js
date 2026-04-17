@@ -1,11 +1,11 @@
   module.exports.config = {
-  name: "tag",
-  version: "6.0.0",
+  name: "autoreplybot",
+  version: "1.2.0",
   hasPermssion: 0,
-  credits: "SABBIR",
-  description: "Reply, mention, বা সবাইকে tag করা",
-  commandCategory: "group",
-  usages: "/tag [@mention/all]",
+  credits: "Ariful Islam Sabbir",
+  hidden: true,
+  usePrefix: false,
+  category: "Chat",
   cooldowns: 2
 };
 
