@@ -50,7 +50,7 @@ module.exports.onChat = async function ({ api, event, threadsData }) {
     const { threadID, messageID, senderID, body } = event;
 
     // নিজের মেসেজে এবং কমান্ড মেসেজে রিয়্যাক্ট করবে না
-    if (!body || senderID == api.getCurrentUserID() || body.startsWith(global.config.PREFIX)) return;
+    if (!body || senderID == api.getCurrentUserID() || body.startsWith(global.GoatBot.config.prefix)) return;
 
     // ডাটাবেস থেকে চেক করা
     const threadInfo = await threadsData.get(threadID);

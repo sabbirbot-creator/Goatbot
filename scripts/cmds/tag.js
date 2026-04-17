@@ -1,15 +1,15 @@
   module.exports.config = {
-  name: "autoreplybot",
+  name: "tag",
   version: "1.2.0",
-  hasPermssion: 0,
+  role: 0,
   credits: "Ariful Islam Sabbir",
-  hidden: true,
-  usePrefix: false,
+  hidden: false,
+  usePrefix: true,
   category: "Chat",
-  cooldowns: 2
+  countDown: 2
 };
 
-module.exports.run = async ({ api, event, args }) => {
+module.exports.onStart = async ({ api, event, args }) => {
   const threadID = event.threadID;
 
   let mentions = [];
