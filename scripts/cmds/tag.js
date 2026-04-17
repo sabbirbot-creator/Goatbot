@@ -1,105 +1,87 @@
-module.exports.config = {
+  module.exports.config = {
   name: "tag",
-  version: "2.0.0",
+  version: "6.0.0",
   hasPermssion: 0,
-  credits: "Ariful Islam Sabbir",
-  description: "Mention করো — reply দিলে সেই ব্যক্তিকে, /tag all দিলে সবাইকে",
-  usePrefix: true,
-  category: "Group",
-  usages: "tag [all | msg] | reply করে /tag",
-  cooldowns: 5
+  credits: "SABBIR",
+  description: "Reply, mention, বা সবাইকে tag করা",
+  commandCategory: "group",
+  usages: "/tag [@mention/all]",
+  cooldowns: 2
 };
 
-module.exports.onStart = async function ({ api, event }) {
-  const { threadID, senderID, messageReply, body } = event;
+module.exports.run = async ({ api, event, args }) => {
+  const threadID = event.threadID;
 
-  const args = (body || "").trim().split(/\s+/);
-  const sub = (args[1] || "").toLowerCase();
-  const customMsg = args.slice(2).join(" ").trim();
+  let mentions = [];
+  let body = "";
 
-  if (sub === "all") {
-    let threadInfo;
+  // ✅ 1. Reply দিলে → ওই user tag
+  if (event.type === "message_reply") {
+    const uid = event.messageReply.senderID;
+
     try {
-      threadInfo = await api.getThreadInfo(threadID);
-    } catch (err) {
-      return api.sendMessage("❌ Group info পেতে পারিনি!", threadID, event.messageID);
+      const userInfo = await api.getUserInfo(uid);                                                                                                                                                                         const name = userInfo[uid]?.name || "User";
+
+      mentions.push({
+        tag: name,
+        id: uid
+      });
+
+      body = `📢 ${name} — তোরে ডাকা হচ্ছে 🐸`;
+
+    } catch (e) {
+      return api.sendMessage("❌ Name আনতে সমস্যা হয়েছে", threadID);
     }
+  }
 
-    const botID = String(api.getCurrentUserID());
-    const participants = [];
+  // ✅ 2. args থাকলে
+  else if (args.length > 0) {
+    const input = args.join(" ").toLowerCase();
 
-    const rawIDs = threadInfo.participantIDs || [];
-    const userInfoMap = {};
-    if (threadInfo.userInfo && Array.isArray(threadInfo.userInfo)) {
-      for (const u of threadInfo.userInfo) {
-        userInfoMap[String(u.id)] = u.name || "User";
+    // 👉 all দিলে
+    if (input === "all" || input === "everyone") {
+      try {
+        const threadInfo = await api.getThreadInfo(threadID);
+
+        mentions = threadInfo.participantIDs
+          .filter(id => id != api.getCurrentUserID())
+          .map(id => ({
+            tag: "@everyone",
+            id: id
+          }));
+
+        body = "📢 @everyone\nসবাই চিপা থেকে বের হও 🐸";
+
+      } catch (e) {
+        return api.sendMessage("❌ Group info নিতে পারছি না", threadID);
       }
     }
 
-    for (const id of rawIDs) {
-      const uid = String(id);
-      if (uid === botID || uid === String(senderID)) continue;
-      participants.push({ id: uid, name: userInfoMap[uid] || "User" });
+    // 👉 @mention দিলে
+    else if (Object.keys(event.mentions).length > 0) {
+      for (let id in event.mentions) {
+        mentions.push({
+          tag: event.mentions[id],
+          id: id
+        });
+      }
+
+      body = `📢 ${Object.values(event.mentions).join(", ")} — তোরে ডাকা হচ্ছে 🐸`;
     }
 
-    if (participants.length === 0) {
-      return api.sendMessage("❌ Tag করার মতো কেউ নেই।", threadID, event.messageID);
+    else {
+      return api.sendMessage("⚠️ কাউকে tag করতে @mention বা reply ব্যবহার করো", threadID);
     }
-
-    let bodyText = "";
-    const mentions = [];
-
-    for (const p of participants) {
-      const tag = `@${p.name}`;
-      mentions.push({
-        tag,
-        id: p.id,
-        fromIndex: bodyText.length,
-        length: tag.length
-      });
-      bodyText += tag + " ";
-    }
-
-    if (customMsg) bodyText = bodyText.trim() + "\n" + customMsg;
-    else bodyText = bodyText.trim();
-
-    try {
-      await api.sendMessage({ body: bodyText, mentions }, threadID);
-    } catch (err) {
-      return api.sendMessage("❌ সবাইকে tag করতে পারিনি। Error: " + err.message, threadID, event.messageID);
-    }
-    return;
   }
 
-  if (messageReply) {
-    const targetID = String(messageReply.senderID);
-    let targetName = "User";
-    try {
-      const info = await api.getUserInfo([targetID]);
-      if (info && info[targetID]) targetName = info[targetID].name || "User";
-    } catch (e) {}
-
-    const tagText = `@${targetName}`;
-    const extraMsg = args.slice(1).join(" ").trim();
-    const msgBody = extraMsg ? `${tagText} ${extraMsg}` : tagText;
-
-    try {
-      await api.sendMessage(
-        {
-          body: msgBody,
-          mentions: [{ tag: tagText, id: targetID, fromIndex: 0, length: tagText.length }]
-        },
-        threadID
-      );
-    } catch (err) {
-      return api.sendMessage("❌ Tag করতে পারিনি! Error: " + err.message, threadID, event.messageID);
-    }
-    return;
+  // ❌ কিছুই না দিলে
+  else {
+    return api.sendMessage("⚠️ Reply দাও বা @mention ব্যবহার করো", threadID);
   }
 
-  return api.sendMessage(
-    "📌 ব্যবহার:\n• /tag all → সবাইকে mention\n• /tag all বার্তা → mention সহ বার্তা\n• কারো message এ reply করে /tag → সেই ব্যক্তিকে mention",
-    threadID,
-    event.messageID
-  );
+  // ✅ Final send
+  return api.sendMessage({
+    body,
+    mentions
+  }, threadID);
 };
