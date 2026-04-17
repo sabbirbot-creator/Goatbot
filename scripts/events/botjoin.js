@@ -28,7 +28,7 @@ module.exports.onStart = async function ({ api, event }) {
     // সামান্য delay দিয়ে nickname set করা
     setTimeout(async () => {
       try {
-        await api.setNickname(BOT_NICKNAME, threadID, botID);
+        await api.nickname(BOT_NICKNAME, threadID, botID);
       } catch (e) {
         // permission না থাকলে চুপ থাকবে
       }

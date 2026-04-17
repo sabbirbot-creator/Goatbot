@@ -92,7 +92,7 @@ module.exports.onStart = async function ({ api, event, args, message }) {
         // Bot join করলে nickname সেট করো
         setTimeout(async () => {
           try {
-            await api.setNickname("𝑺𝑨𝑩𝑩𝑰𝑹 𝑮𝑶𝑨𝑻 𝑩𝑶𝑻", target.threadID, String(api.getCurrentUserID()));
+            await api.nickname("𝑺𝑨𝑩𝑩𝑰𝑹 𝑮𝑶𝑨𝑻 𝑩𝑶𝑻", target.threadID, String(api.getCurrentUserID()));
           } catch (e) {}
         }, 2000);
 

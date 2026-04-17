@@ -7,9 +7,11 @@ const reactions = [
   "㊗️", "🔞", "📍"
 ];
 
+if (!global.autoReactThreads) global.autoReactThreads = new Set();
+
 module.exports.config = {
   name: "autoreact",
-  version: "1.1.0",
+  version: "1.2.0",
   role: {
     onStart: 2,
     onChat: 0
@@ -26,49 +28,60 @@ module.exports.config = {
   }
 };
 
+module.exports.onLoad = async function ({ threadsData }) {
+  try {
+    const all = global.db.allThreadData || [];
+    for (const t of all) {
+      if (t.data?.autoReact === true) {
+        global.autoReactThreads.add(t.threadID);
+      }
+    }
+  } catch (e) {}
+};
+
 module.exports.onStart = async function ({ event, args, message, threadsData }) {
   const { threadID } = event;
   const action = (args[0] || "").toLowerCase();
 
   if (!["on", "off"].includes(action)) {
+    const status = global.autoReactThreads.has(threadID) ? "✅ চালু" : "❌ বন্ধ";
     return message.reply(
-      "📌 ব্যবহার:\n"
-      + "autoreact on — চালু করতে\n"
-      + "autoreact off — বন্ধ করতে"
+      `🎭 AutoReact Status: ${status}\n\n📌 ব্যবহার:\n• /autoreact on → চালু করো\n• /autoreact off → বন্ধ করো`
     );
   }
 
   const isEnable = action === "on";
-  await threadsData.set(threadID, "autoReact", isEnable);
+
+  if (isEnable) {
+    global.autoReactThreads.add(threadID);
+  } else {
+    global.autoReactThreads.delete(threadID);
+  }
+
+  try {
+    await threadsData.set(threadID, "autoReact", isEnable);
+  } catch (e) {}
 
   return message.reply(
     isEnable
-      ? `✅ AutoReact চালু হয়েছে!`
-      : "❌ এই গ্রুপে AutoReact বন্ধ করা হয়েছে!"
+      ? `✅ AutoReact চালু হয়েছে!\nএখন সবার message এ random react পড়বে।`
+      : `❌ AutoReact বন্ধ হয়েছে!`
   );
 };
 
-module.exports.onChat = async function ({ api, event, threadsData }) {
-  try {
-    const { threadID, messageID, senderID, body } = event;
+module.exports.onChat = async function ({ api, event }) {
+  const { threadID, messageID, senderID, body } = event;
 
-    // নিজের মেসেজে এবং কমান্ড মেসেজে রিয়্যাক্ট করবে না
-    if (!body || senderID == api.getCurrentUserID() || body.startsWith(global.GoatBot.config.prefix)) return;
+  if (!body) return;
+  if (senderID == api.getCurrentUserID()) return;
+  if (body.startsWith(global.GoatBot.config.prefix)) return;
+  if (!global.autoReactThreads.has(threadID)) return;
 
-    // ডাটাবেস থেকে চেক করা
-    const autoReactStatus = await threadsData.get(threadID, "autoReact", false);
+  const randomReact = reactions[Math.floor(Math.random() * reactions.length)];
 
-    if (autoReactStatus === true) {
-      const randomReact = reactions[Math.floor(Math.random() * reactions.length)];
-      
-      // সামান্য ডিলে দেওয়া হয়েছে যাতে ফেসবুক স্প্যাম ডিটেক্ট না করে
-      setTimeout(() => {
-        api.setMessageReaction(randomReact, messageID, (err) => {
-          if (err) console.error("Reaction Error:", err);
-        }, true);
-      }, 500); 
-    }
-  } catch (e) {
-    // কোনো এরর হলে কনসোলে দেখাবে
-  }
+  setTimeout(() => {
+    api.setMessageReaction(randomReact, messageID, (err) => {
+      if (err) console.error("[AutoReact] Reaction Error:", err);
+    }, true);
+  }, 500);
 };
