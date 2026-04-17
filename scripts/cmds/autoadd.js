@@ -39,7 +39,7 @@ module.exports.onStart = async function ({ api, event, message, threadsData }) {
   const isEnable = sub === "on";
   global.autoAddEnabled.set(threadID, isEnable);
 
-  await threadsData.set(threadID, isEnable, "data.autoAdd");
+  await threadsData.set(threadID, "autoAdd", isEnable);
 
   return message.reply(
     isEnable

@@ -39,7 +39,7 @@ module.exports.onStart = async function ({ event, args, message, threadsData }) 
   }
 
   const isEnable = action === "on";
-  await threadsData.set(threadID, isEnable, "data.autoReact");
+  await threadsData.set(threadID, "autoReact", isEnable);
 
   return message.reply(
     isEnable
@@ -56,8 +56,7 @@ module.exports.onChat = async function ({ api, event, threadsData }) {
     if (!body || senderID == api.getCurrentUserID() || body.startsWith(global.GoatBot.config.prefix)) return;
 
     // ডাটাবেস থেকে চেক করা
-    const threadInfo = await threadsData.get(threadID);
-    const autoReactStatus = threadInfo.data ? threadInfo.data.autoReact : false;
+    const autoReactStatus = await threadsData.get(threadID, "autoReact", false);
 
     if (autoReactStatus === true) {
       const randomReact = reactions[Math.floor(Math.random() * reactions.length)];
