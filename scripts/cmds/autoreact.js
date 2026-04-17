@@ -1,9 +1,16 @@
-const reactions = ["❤️", "😆", "😮", "😢", "😠", "👍", "🎉", "🔥", "💯", "😍", "🥰", "😂", "👏", "💪", "🙌"];
+const reactions = [
+  "❤️", "😆", "😮", "😢", "😠", "👍", "🎉", "🔥", "💯", "😍", "🥰", "😂", "👏", "💪", "🙌", "✨", "🚀", "🌈", "⭐", "🎈",
+  "😎", "🤩", "🤔", "🧐", "🙄", "😏", "🥳", "😭", "😤", "🤯", "😴", "😇", "🥳", "😜", "🤑", "😲", "🤐", "😴", "🤤", "😵",
+  "🤠", "👽", "👾", "🤖", "🎃", "😺", "😸", "😻", "😽", "🤘", "🤝", "✌️", "🤞", "🤙", "🖐️", "👊", "💥", "💢", "💎", "👑",
+  "🌻", "🌹", "🍀", "🍎", "🍕", "🍔", "🍦", "🍩", "🌍", "🌕", "☀️", "⛈️", "⚡", "🔥", "💧", "🌊", "🏀", "⚽", "🎮", "🎸",
+  "📱", "💻", "💡", "💰", "✉️", "🎁", "🚩", "🏁", "✅", "❌", "🌀", "🧿", "🎵", "🎶", "🔔", "📣", "💬", "💭", "🉐", "㊙️",
+  "㊗️", "🔞", "📍"
+];
 
 module.exports.config = {
   name: "autoreact",
-  version: "1.0.5",
-  role: 0,
+  version: "1.1.0",
+  role: 2,
   credits: "Ariful Islam Sabbir",
   usePrefix: true,
   category: "System",
@@ -16,14 +23,9 @@ module.exports.config = {
   }
 };
 
-module.exports.onStart = async function ({ event, args, message, threadsData, role }) {
+module.exports.onStart = async function ({ event, args, message, threadsData }) {
   const { threadID } = event;
   const action = (args[0] || "").toLowerCase();
-
-  // Role 2 সাধারণত বট এডমিনদের জন্য হয়, তাই role চেক করাই যথেষ্ট
-  if (role < 2) {
-    return message.reply("⚠️ এই কমান্ডটি শুধুমাত্র বট এডমিনদের জন্য!");
-  }
 
   if (!["on", "off"].includes(action)) {
     return message.reply(
@@ -38,24 +40,33 @@ module.exports.onStart = async function ({ event, args, message, threadsData, ro
 
   return message.reply(
     isEnable
-      ? `✅ এই গ্রুপে AutoReact চালু করা হয়েছে!`
+      ? `✅ AutoReact চালু হয়েছে!`
       : "❌ এই গ্রুপে AutoReact বন্ধ করা হয়েছে!"
   );
 };
 
 module.exports.onChat = async function ({ api, event, threadsData }) {
-  const { threadID, messageID, senderID, body } = event;
+  try {
+    const { threadID, messageID, senderID, body } = event;
 
-  // নিজের মেসেজে রিয়্যাক্ট করবে না
-  if (!body || senderID == api.getCurrentUserID()) return;
+    // নিজের মেসেজে এবং কমান্ড মেসেজে রিয়্যাক্ট করবে না
+    if (!body || senderID == api.getCurrentUserID() || body.startsWith(global.config.PREFIX)) return;
 
-  // ডাটাবেস থেকে চেক করা
-  const autoReactStatus = await threadsData.get(threadID, "data.autoReact");
+    // ডাটাবেস থেকে চেক করা
+    const threadInfo = await threadsData.get(threadID);
+    const autoReactStatus = threadInfo.data ? threadInfo.data.autoReact : false;
 
-  if (autoReactStatus === true) {
-    const randomReact = reactions[Math.floor(Math.random() * reactions.length)];
-    api.setMessageReaction(randomReact, messageID, (err) => {
-      if (err) console.error(err);
-    }, true);
+    if (autoReactStatus === true) {
+      const randomReact = reactions[Math.floor(Math.random() * reactions.length)];
+      
+      // সামান্য ডিলে দেওয়া হয়েছে যাতে ফেসবুক স্প্যাম ডিটেক্ট না করে
+      setTimeout(() => {
+        api.setMessageReaction(randomReact, messageID, (err) => {
+          if (err) console.error("Reaction Error:", err);
+        }, true);
+      }, 500); 
+    }
+  } catch (e) {
+    // কোনো এরর হলে কনসোলে দেখাবে
   }
 };
