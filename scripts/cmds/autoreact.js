@@ -10,7 +10,10 @@ const reactions = [
 module.exports.config = {
   name: "autoreact",
   version: "1.1.0",
-  role: 2,
+  role: {
+    onStart: 2,
+    onChat: 0
+  },
   credits: "Ariful Islam Sabbir",
   usePrefix: true,
   category: "System",
