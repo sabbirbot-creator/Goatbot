@@ -11,17 +11,17 @@ module.exports.config = {
 
 const axios = require("axios");
 
-module.exports.run = async ({ api, event, args }) => {
+// Changed "run" to "onStart" to match your framework's requirement
+module.exports.onStart = async ({ api, event, args }) => {
     const { threadID, messageID } = event;
     const out = msg => api.sendMessage(msg, threadID, messageID);
 
     if (!args[0]) return out("UID বা Link দিন......");
 
-
+    // Logic for adding user
     if (!isNaN(args[0])) {
         return addUserToGroup(args[0]);
     }
-
 
     let link = args[0];
     let uid = null;
@@ -32,7 +32,6 @@ module.exports.run = async ({ api, event, args }) => {
 
         let res = await axios.get(link);
         let data = res.data;
-
 
         let match = data.match(/"userID":"(\d+)"/);
         if (match) uid = match[1];
