@@ -1,5 +1,5 @@
 const axios = require("axios");
-const API_URL = "https://sabbir-baby-api.onrender.com/api/chat";
+const API_URL = "https://simsimi.cyberbot.top";
 
 module.exports.config = {
   name: "autoreplybot",
