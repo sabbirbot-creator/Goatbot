@@ -1,84 +1,74 @@
 const axios = require("axios");
 
-// আপনার ডাটাবেজ API
 const SABBIR_API = "https://sabbir-simisimi-api-71u6.onrender.com";
-// সোর্স API (Cyberbot)
 const CYBERBOT_API = "https://simsimi.cyberbot.top";
 
 module.exports.config = {
   name: "autoreplybot",
-  version: "3.1.0",
+  version: "3.2.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
   hidden: true,
   usePrefix: false,
   category: "Chat",
-  cooldowns: 2
+  cooldowns: 1
 };
 
 module.exports.onChat = async function ({ message, event, api }) {
   const { body, senderID, threadID } = event;
-  const botID = api.getCurrentUserID();
-
-  // ১. বেসিক চেক
-  if (!body || senderID == botID) return;
+  if (!body || senderID == api.getCurrentUserID()) return;
 
   const prefix = global.GoatBot?.config?.prefix || "/";
   if (body.startsWith(prefix)) return;
 
   const msg = body.toLowerCase().trim();
 
-  // ২. ফিক্সড রিপ্লাই
+  // ১. ফিক্সড রিপ্লাই
   const quickResponses = {
     "hi": "হেই😜",
     "hello": "বলো জান 🥰",
     "salam": "Walaikumassalam❤️‍🩹",
     "assalamualaikum": "Walaikumassalam❤️‍🩹"
   };
-
   if (quickResponses[msg]) return message.reply(quickResponses[msg]);
 
   try {
-    // ৩. আপনার Sabbir API-তে চেক করা
-    // এখানে getNameUser বাদ দিয়েছি এরর এড়াতে
-    const resMy = await axios.get(`${SABBIR_API}/simsimi?text=${encodeURIComponent(body)}`);
-    let myReply = resMy.data.text || resMy.data.reply;
+    let botReply = "";
 
-    // ৪. যদি আপনার কাছে উত্তর না থাকে, তবে Cyberbot থেকে শেখা
-    if (!myReply || myReply.includes("I don't know") || myReply.includes("বুঝতে পারিনি")) {
-      
-      const resCyber = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(body)}`);
-      // Cyberbot থেকে আসা উত্তর (এটি .text বা .response হতে পারে, আপনার আগের ফাইল অনুযায়ী .text দিলাম)
-      const cyberReply = resCyber.data.text || resCyber.data.response;
-
-      if (cyberReply && !cyberReply.includes("I don't know")) {
-        
-        // ৫. আপনার Sabbir API-তে অটো-সেভ করা (Teach)
-        const teachUrl = `${SABBIR_API}/teach?ask=${encodeURIComponent(body)}&ans=${encodeURIComponent(cyberReply)}&senderID=${senderID}&groupID=${threadID}`;
-        
-        // ব্যাকগ্রাউন্ডে সেভ হবে
-        axios.get(teachUrl).catch(() => {}); 
-
-        return message.reply(cyberReply);
-      }
-    } else {
-      // আপনার কাছে উত্তর থাকলে সেটাই দিবে
-      return message.reply(myReply);
+    try {
+      // ২. আপনার Sabbir API ট্রাই করা
+      const resMy = await axios.get(`${SABBIR_API}/simsimi?text=${encodeURIComponent(body)}`, { timeout: 5000 });
+      botReply = resMy.data.text || resMy.data.reply;
+    } catch (e) {
+      console.log("Sabbir API (502/Timeout) - Switching to Cyberbot");
     }
+
+    // ৩. আপনার API-তে উত্তর না থাকলে বা এরর হলে Cyberbot ব্যবহার করা
+    if (!botReply || botReply.includes("I don't know") || botReply.includes("বুঝতে পারিনি")) {
+      const resCyber = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(body)}`);
+      botReply = resCyber.data.text || resCyber.data.response;
+
+      if (botReply && !botReply.includes("I don't know")) {
+        // ৪. ব্যাকগ্রাউন্ডে আপনার API-তে Teach করা
+        const teachUrl = `${SABBIR_API}/teach?ask=${encodeURIComponent(body)}&ans=${encodeURIComponent(botReply)}&senderID=${senderID}&groupID=${threadID}`;
+        axios.get(teachUrl).catch(() => {}); 
+      }
+    }
+
+    if (botReply) return message.reply(botReply);
+
   } catch (err) {
-    // এরর আসলে কনসোলে দেখাবে কিন্তু বট ক্রাশ করবে না
-    console.log("Simi Error: " + err.message);
+    console.log("Final Error: " + err.message);
   }
 };
 
 module.exports.onStart = async function ({ message, args }) {
   const input = args.join(" ");
-  if (!input) return message.reply("কিছু একটা বলো...");
-
+  if (!input) return message.reply("বলো বেবি...");
   try {
-    const res = await axios.get(`${SABBIR_API}/simsimi?text=${encodeURIComponent(input)}`);
-    return message.reply(res.data.text || res.data.reply || "উমম...");
-  } catch (err) {
-    return message.reply("সার্ভার এরর!");
+    const res = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(input)}`);
+    message.reply(res.data.text || res.data.response || "হুমম...");
+  } catch (e) {
+    message.reply("API ডাউন আছে।");
   }
 };
