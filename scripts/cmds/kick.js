@@ -9,7 +9,7 @@ module.exports.config = {
   usages: "kick @mention | reply করে kick | kick <UID>",
   cooldowns: 5
 };
-module.exports.run = async function({ api, event, getText, Threads }) {
+module.exports.onStart = async function({ api, event, getText, Threads }) {
 	var mention = Object.keys(event.mentions);
 	try {
 		let dataThread = (await Threads.getData(event.threadID)).threadInfo;
