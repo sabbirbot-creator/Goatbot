@@ -1,13 +1,13 @@
 module.exports.config = {
   name: "kick",
   version: "1.3.0",
-  hasPermssion: 0,
+  hasPermssion: 1,
   credits: "Ariful Islam Sabbir",
-  description: "Group থেকে কাউকে বের করো",
+  description: "Group theke kick kora",
   usePrefix: true,
-  category: "Group",
-  usages: "kick @mention | reply করে kick | kick <UID>",
-  cooldowns: 5
+  category: "systam",
+  usages: "[tag]",
+  cooldowns: 0
 };
 module.exports.onStart = async function({ api, event, getText, Threads }) {
 	var mention = Object.keys(event.mentions);
