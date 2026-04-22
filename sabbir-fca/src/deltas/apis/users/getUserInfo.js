@@ -1,5 +1,5 @@
 "use strict";
-// @ChoruOfficial
+
 const utils = require('../../../utils');
 const _ = require('lodash');
 const deepdash = require('deepdash');
@@ -97,11 +97,7 @@ function findLiveCityFromProfileTiles(allJsonData) {
         value.includes('Lives in') &&
         parent?.ranges?.[0]?.entity?.category_type === "CITY_WITH_ID";
     });
-
-    if (result) {
-      return result.value;
-    }
-
+    if (result) return result.value;
     return null;
   } catch (err) {
     return null;
@@ -111,10 +107,10 @@ function findLiveCityFromProfileTiles(allJsonData) {
 module.exports = (defaultFuncs, api, ctx) => {
   function createDefaultUser(id) {
     return {
-      id,
+      id: id,
       name: "Facebook User",
       firstName: "Facebook",
-      lastName: null,
+      lastName: "User",
       vanity: id,
       profilePicUrl: `https://graph.facebook.com/${id}/picture?width=720&height=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
       profileUrl: `https://www.facebook.com/profile.php?id=${id}`,
@@ -125,7 +121,7 @@ module.exports = (defaultFuncs, api, ctx) => {
     };
   }
 
-  return function getUserInfo(id, usePayload, callback, groupFields = []) {
+  return function getUserInfo(id, usePayload, callback) {
     let resolveFunc = () => {};
     let rejectFunc = () => {};
     const returnPromise = new Promise((resolve, reject) => {
@@ -151,89 +147,91 @@ module.exports = (defaultFuncs, api, ctx) => {
     if (usePayload) {
       const form = {};
       ids.forEach((v, i) => { form[`ids[${i}]`] = v; });
-      const getGenderString = (code) => code === 1 ? "male" : code === 2 ? "female" : "no specific gender";
+      const getGenderString = (code) => code === 1 ? "female" : code === 2 ? "male" : "no specific gender";
+
       defaultFuncs.post("https://www.facebook.com/chat/user_info/", ctx.jar, form)
         .then(resData => utils.parseAndCheckLogin(ctx, defaultFuncs)(resData))
         .then(resData => {
           if (resData?.error && resData?.error !== 3252001) throw resData;
+          
           const retObj = {};
-          const profiles = resData?.payload?.profiles;
-          if (profiles) {
-            for (const prop in profiles) {
-              if (profiles.hasOwnProperty(prop)) {
-                const inner = profiles[prop];
-                const nameParts = inner.name ? inner.name.split(' ') : [];
-                retObj[prop] = {
-                  id: prop,
-                  name: inner.name,
-                  firstName: inner.firstName,
-                  lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : null,
-                  vanity: inner.vanity,
-                  profilePicUrl: `https://graph.facebook.com/${prop}/picture?width=720&height=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
-                  profileUrl: inner.uri,
-                  gender: getGenderString(inner.gender),
-                  type: inner.type,
-                  isFriend: inner.is_friend,
-                  isBirthday: !!inner.is_birthday,
-                  searchTokens: inner.searchTokens,
-                  alternateName: inner.alternateName
-                };
-              }
-            }
-          } else {
-            for (const prop of ids) {
+          const profiles = resData?.payload?.profiles || {};
+
+          ids.forEach(prop => {
+            if (profiles[prop]) {
+              const inner = profiles[prop];
+              const nameParts = inner.name ? inner.name.split(' ') : [];
+              retObj[prop] = {
+                id: prop,
+                name: inner.name || "Facebook User",
+                firstName: inner.firstName || (nameParts[0] || "Facebook"),
+                lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : null,
+                vanity: inner.vanity || prop,
+                profilePicUrl: `https://graph.facebook.com/${prop}/picture?width=720&height=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
+                profileUrl: inner.uri || `https://www.facebook.com/${prop}`,
+                gender: getGenderString(inner.gender),
+                type: inner.type || "user",
+                isFriend: !!inner.is_friend,
+                isBirthday: !!inner.is_birthday,
+                searchTokens: inner.searchTokens,
+                alternateName: inner.alternateName
+              };
+            } else {
               retObj[prop] = createDefaultUser(prop);
             }
-          }
-          return originalIdIsArray ? callback(null, Object.values(retObj)) : callback(null, retObj[ids[0]]);
+          });
+          
+          return callback(null, originalIdIsArray ? retObj : retObj[ids[0]]);
         }).catch(err => {
           utils.error("getUserInfo (payload)", err);
-          return callback(err);
+          // Error আসলেও অন্তত ডিফল্ট ডাটা রিটার্ন করবে
+          const fallbackObj = {};
+          ids.forEach(prop => { fallbackObj[prop] = createDefaultUser(prop); });
+          return callback(null, originalIdIsArray ? fallbackObj : fallbackObj[ids[0]]);
         });
     } else {
+      // Scraper Method
       const fetchProfile = async (userID) => {
         try {
           const url = `https://www.facebook.com/${userID}`;
           const allJsonData = await utils.json(url, ctx.jar, null, ctx.globalOptions, ctx);
-          if (!allJsonData || allJsonData.length === 0) throw new Error(`Could not find JSON data for ID: ${userID}`);
+          if (!allJsonData || allJsonData.length === 0) throw new Error(`Empty JSON`);
+          
           const mainUserObject = findMainUserObject(allJsonData, userID);
-          if (!mainUserObject) throw new Error(`Could not isolate main user object for ID: ${userID}`);
-          const get = (obj, path) => {
-            if (!obj || !path) return null;
-            return path.split('.').reduce((prev, curr) => (prev ? prev[curr] : undefined), obj);
-          };
-          const name = mainUserObject.name;
-          const nameParts = name ? name.split(' ') : [];
-          const result = {
+          if (!mainUserObject) return createDefaultUser(userID);
+
+          const name = mainUserObject.name || "Facebook User";
+          const nameParts = name.split(' ');
+          
+          return {
             id: mainUserObject.id,
             name: name,
-            firstName: nameParts[0] || get(mainUserObject, 'short_name') || get(findFirstValueByKey(allJsonData, 'profile_owner'), 'short_name'),
+            firstName: nameParts[0] || "Facebook",
             lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : null,
-            vanity: get(mainUserObject, 'vanity') || get(findFirstValueByKey(allJsonData, 'props'), 'userVanity') || null,
-            profileUrl: mainUserObject.url,
+            vanity: mainUserObject.vanity || userID,
+            profileUrl: mainUserObject.url || url,
             profilePicUrl: `https://graph.facebook.com/${userID}/picture?width=720&height=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
-            gender: mainUserObject.gender,
-            type: mainUserObject.__typename,
-            isFriend: mainUserObject.is_viewer_friend,
+            gender: mainUserObject.gender || "no specific gender",
+            type: mainUserObject.__typename || "User",
+            isFriend: !!mainUserObject.is_viewer_friend,
             isBirthday: !!mainUserObject.is_birthday,
-            isVerified: !!mainUserObject.show_verified_badge_on_profile,
-            bio: findBioFromProfileTiles(allJsonData) || get(findFirstValueByKey(allJsonData, 'delegate_page'), 'best_description.text'),
-            live_city: findLiveCityFromProfileTiles(allJsonData),
-            headline: get(mainUserObject, 'contextual_headline.text') || get(findFirstValueByKey(allJsonData, 'meta_verified_section'), 'headline'),
-            followers: findSocialContextText(mainUserObject.profile_social_context, "followers"),
-            following: findSocialContextText(mainUserObject.profile_social_context, "following"),
-            coverPhoto: get(mainUserObject, 'cover_photo.photo.image.uri')
+            bio: findBioFromProfileTiles(allJsonData),
+            live_city: findLiveCityFromProfileTiles(allJsonData)
           };
-          return result;
         } catch (err) {
-          utils.error(`Failed to fetch profile for ${userID}: ${err.message}`, err);
           return createDefaultUser(userID);
         }
       };
 
       Promise.all(ids.map(fetchProfile))
         .then(results => {
-          return originalIdIsArray ? callback(null, results) : callback(null, results[0] || null);
+          if (originalIdIsArray) {
+            const resObj = {};
+            results.forEach(r => { resObj[r.id] = r; });
+            callback(null, resObj);
+          } else {
+            callback(null, results[0]);
+          }
         })
         .catch(err => {
           utils.error("getUserInfo (fetch)", err);
