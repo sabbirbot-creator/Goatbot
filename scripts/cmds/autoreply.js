@@ -1,10 +1,12 @@
 const axios = require("axios");
 
+// আপনার API এবং CyberBot API লিঙ্ক
+const SABBIR_API = "https://sabbir-simisimi-api-71u6.onrender.com";
 const CYBERBOT_API = "https://simsimi.cyberbot.top";
 
 module.exports.config = {
   name: "autoreplybot",
-  version: "4.0.0",
+  version: "5.0.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
   hidden: true,
@@ -17,15 +19,14 @@ module.exports.onChat = async function ({ message, event, api }) {
   const { body, senderID } = event;
   const botID = api.getCurrentUserID();
 
-  // ১. বট নিজে নিজেকে রিপ্লাই দিবে না
+  // ১. ফিল্টার: বট নিজে নিজেকে বা কোনো কমান্ড রিপ্লাই দিবে না
   if (!body || senderID == botID) return;
-
   const prefix = global.GoatBot?.config?.prefix || "/";
-  if (body.startsWith(prefix)) return;
+  if (body.startsWith(prefix) || body.startsWith("!")) return;
 
   const msg = body.toLowerCase().trim();
 
-  // ২. ফিক্সড রিপ্লাই (এগুলো থেকেও ইমোজি সরাতে চাইলে সরাতে পারেন)
+  // ২. ফিক্সড রিপ্লাই
   const quickResponses = {
     "hi": "হেই",
     "hello": "বলো জান",
@@ -40,14 +41,30 @@ module.exports.onChat = async function ({ message, event, api }) {
     const resCyber = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(body)}`);
     let botReply = resCyber.data.text || resCyber.data.response;
 
-    if (botReply && !botReply.includes("I don't know")) {
+    if (botReply && !botReply.includes("I don't know") && !botReply.includes("বুঝতে পারিনি")) {
       
-      // ৪. ইমোজি ব্লকার (Regex ব্যবহার করে সব ইমোজি মুছে ফেলা)
+      // ৪. ইমোজি ফিল্টার
       const cleanReply = botReply.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
 
-      // যদি ইমোজি সরানোর পর কিছু লেখা বাকি থাকে তবে সেটা পাঠাবে, নয়তো অরিজিনাল মেসেজ (যদি শুধু ইমোজিই উত্তর হয়)
       const finalMsg = cleanReply || "হুমম..."; 
-      return message.reply(finalMsg);
+      
+      // ৫. ইউজারকে রিপ্লাই পাঠানো
+      message.reply(finalMsg);
+
+      // ৬. অটো-সেভ লজিক (সাইলেন্টলি আপনার এপিআই-তে সেভ হবে)
+      if (finalMsg !== "হুমম...") {
+        const teachUrl = `${SABBIR_API}/teach?ask=${encodeURIComponent(body)}&ans=${encodeURIComponent(finalMsg)}`;
+        
+        axios.get(teachUrl)
+          .then((res) => {
+            if (res.data.status === "success") {
+              console.log(`[Auto-Save] ${body} -> ${finalMsg}`);
+            }
+          })
+          .catch(() => {
+            // এপিআই অফলাইন থাকলে কনসোলে কোনো ঝামেলা করবে না
+          });
+      }
     }
 
   } catch (err) {
@@ -62,7 +79,6 @@ module.exports.onStart = async function ({ message, args }) {
     const res = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(input)}`);
     let reply = res.data.text || res.data.response;
     
-    // স্টার্ট কমান্ডেও ইমোজি ফিল্টার
     const cleanReply = reply.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
     
     message.reply(cleanReply || "হুমম...");
