@@ -1,6 +1,8 @@
+const { getName } = require("../../utils/getName.js");
+
 module.exports.config = {
   name: "antijoin",
-  version: "1.0.0",
+  version: "1.1.0",
   role: 0,
   credits: "Ariful Islam Sabbir",
   description: "Group থেকে কেউ leave করলে auto re-add করে (per-group toggle আছে)",
@@ -41,20 +43,14 @@ module.exports.onStart = async function ({ api, event }) {
 
   try {
     await api.addUserToGroup(leftUserID, threadID);
-
-    let name = "User";
-    try {
-      const info = await api.getUserInfo([leftUserID]);
-      if (info && info[leftUserID]) name = info[leftUserID].name || "User";
-    } catch (e) {}
-
+    const name = await getName(api, leftUserID, "User");
     await api.sendMessage(
-      `🔄 ${name} আবার add করা হয়েছে!\nAntiJoin চালু আছে — কেউ leave করতে পারবে না।`,
+      `🔄 ${name} কে আবার add করা হয়েছে!\nAntiJoin চালু আছে — কেউ leave করতে পারবে না।`,
       threadID
     );
   } catch (err) {
     await api.sendMessage(
-      `⚠️ Auto re-add করতে পারিনি!\n🐛 Error: ${err.message}`,
+      `⚠️ Auto re-add করতে পারিনি!\n🐛 ${err.message || "Unknown error"}`,
       threadID
     );
   }

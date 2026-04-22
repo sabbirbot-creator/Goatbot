@@ -1,6 +1,8 @@
+const { getName } = require("../../utils/getName.js");
+
 module.exports.config = {
   name: "leav",
-  version: "1.0.0",
+  version: "1.1.0",
   role: 0,
   credits: "Ariful Islam Sabbir",
   description: "Group থেকে কেউ leave করলে বিদায় message পাঠায়",
@@ -26,11 +28,7 @@ module.exports.onStart = async function ({ api, event }) {
   const botID = String(api.getCurrentUserID());
   if (leftUserID === botID) return;
 
-  let leftName = "কেউ একজন";
-  try {
-    const info = await api.getUserInfo([leftUserID]);
-    if (info && info[leftUserID]) leftName = info[leftUserID].name || leftName;
-  } catch (e) {}
+  const leftName = await getName(api, leftUserID, "একজন member");
 
   const wasKicked =
     logMessageData?.removedParticipantFbId &&
@@ -39,13 +37,14 @@ module.exports.onStart = async function ({ api, event }) {
 
   let leaveMsg;
   if (wasKicked) {
+    const adminName = await getName(api, author, "একজন admin");
     leaveMsg =
       `👢 ${leftName} কে group থেকে বের করা হয়েছে!\n` +
-      `😔 Rules না মানলে এমনই হয়।`;
+      `🛡️ Remove করেছে: ${adminName}`;
   } else {
     leaveMsg =
-      `😢 ${leftName} group ছেড়ে চলে গেছে!\n\n` +
-      ``;
+      `😢 ${leftName} group ছেড়ে চলে গেছে!\n` +
+      `👋 আবার দেখা হবে...`;
   }
 
   try {

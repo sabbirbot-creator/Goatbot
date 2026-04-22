@@ -1,52 +1,76 @@
+const { getName } = require("../../utils/getName.js");
+
 module.exports.config = {
   name: "kick",
-  version: "1.3.0",
+  version: "1.4.0",
+  role: 1,
   hasPermssion: 1,
   credits: "Ariful Islam Sabbir",
-  description: "Group theke kick kora",
+  description: "Group theke user kick kora",
   usePrefix: true,
-  category: "system",
-  usages: "[tag]",
+  category: "group",
+  usages: "[@tag] / [reply] / [uid]",
+  countDown: 2,
   cooldowns: 0
 };
 
-module.exports.onStart = async function({ api, event, getText, Threads }) {
-  const { threadID, messageID, senderID, mentions } = event;
-  const mention = Object.keys(mentions);
+module.exports.onStart = async function ({ api, event, args, message }) {
+  const { threadID, messageID, senderID, mentions, type, messageReply } = event;
 
   try {
-    // ১. থ্রেড ডাটা এবং অ্যাডমিন লিস্ট চেক করা
     const threadInfo = await api.getThreadInfo(threadID);
-    const botID = api.getCurrentUserID();
+    const botID = String(api.getCurrentUserID());
+    const adminIDs = (threadInfo.adminIDs || []).map(a => String((a && a.id) ? a.id : a));
 
-    // ২. বট নিজে অ্যাডমিন কি না চেক করা
-    const isBotAdmin = threadInfo.adminIDs.some(item => item.id == botID);
-    if (!isBotAdmin) return api.sendMessage(getText("commands.kick.error"), threadID, messageID);
+    if (!adminIDs.includes(botID))
+      return message.reply("⚠️ Bot এই group এর admin না, তাই কাউকে kick করতে পারবে না।");
 
-    // ৩. কাউকে ট্যাগ করা হয়েছে কি না চেক
-    if (mention.length === 0) return api.sendMessage(getText("commands.kick.noMention"), threadID, messageID);
+    if (!adminIDs.includes(String(senderID)))
+      return message.reply("⛔ এই কাজটি শুধুমাত্র group admin করতে পারবে।");
 
-    // ৪. যে কমান্ড দিচ্ছে সে অ্যাডমিন কি না চেক
-    const isSenderAdmin = threadInfo.adminIDs.some(item => item.id == senderID);
-    if (!isSenderAdmin) return api.sendMessage(getText("commands.kick.notGroupAdmin"), threadID, messageID);
+    let targets = [];
 
-    // ৫. কিক প্রসেস শুরু
-    for (const id of mention) {
-      // বট নিজে বা বট অ্যাডমিনকে কিক করা আটকানো (সুরক্ষার জন্য)
-      if (id == botID) return api.sendMessage(getText("commands.kick.cantKickAdmin"), threadID, messageID);
+    if (mentions && Object.keys(mentions).length > 0) {
+      targets = Object.keys(mentions);
+    } else if (type === "message_reply" && messageReply && messageReply.senderID) {
+      targets = [String(messageReply.senderID)];
+    } else if (args[0] && /^\d+$/.test(args[0])) {
+      targets = [args[0]];
+    } else {
+      return message.reply("📌 ব্যবহার:\n• /kick @mention\n• Reply দিয়ে /kick\n• /kick <UID>");
+    }
 
-      setTimeout(() => {
-        api.removeUserFromGroup(id, threadID, (err) => {
-          if (err) return api.sendMessage(getText("commands.kick.error"), threadID);
-          
-          // সফল হলে সাকসেস মেসেজ (নাম রিপ্লেস করে)
-          const name = mentions[id].replace("@", "");
-          api.sendMessage(getText("commands.kick.success", name), threadID);
-        });
-      }, 1500);
+    for (const id of targets) {
+      const sid = String(id);
+
+      if (sid === botID) {
+        await message.reply("🙃 আমি নিজেকে kick করতে পারব না!");
+        continue;
+      }
+
+      if (adminIDs.includes(sid)) {
+        const aname = await getName(api, sid, "একজন admin");
+        await message.reply(`🛡️ ${aname} group admin, তাকে kick করা যাবে না।`);
+        continue;
+      }
+
+      const name = await getName(api, sid, "এই user");
+
+      await new Promise(resolve => {
+        setTimeout(() => {
+          api.removeUserFromGroup(sid, threadID, (err) => {
+            if (err) {
+              api.sendMessage(`❌ ${name} কে kick করা যায়নি!`, threadID);
+            } else {
+              api.sendMessage(`👢 ${name} কে group থেকে বের করে দেওয়া হয়েছে!`, threadID);
+            }
+            resolve();
+          });
+        }, 1200);
+      });
     }
   } catch (e) {
-    console.error(e);
-    return api.sendMessage(getText("commands.kick.error"), threadID, messageID);
+    console.error("kick error:", e);
+    return message.reply(`❌ Kick command এ সমস্যা হয়েছে!\n${e.message || ""}`);
   }
 };

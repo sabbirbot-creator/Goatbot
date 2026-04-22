@@ -1,14 +1,13 @@
+const { getName } = require("../../utils/getName.js");
+
 module.exports.config = {
   name: "autoadd",
-  version: "1.0.0",
-  role: {
-    onStart: 1,
-    onEvent: 0
-  },
+  version: "1.1.0",
+  role: 1,
   credits: "Ariful Islam Sabbir",
   usePrefix: true,
   hidden: false,
-  category: "Group",
+  category: "group",
   countDown: 3,
   shortDescription: "কেউ leave করলে bot auto add করবে",
   longDescription: "Group admin এই command দিয়ে autoadd on/off করতে পারবে",
@@ -20,10 +19,9 @@ module.exports.config = {
 
 if (!global.autoAddEnabled) global.autoAddEnabled = new Map();
 
-module.exports.onStart = async function ({ api, event, message, threadsData }) {
-  const { threadID, messageID, senderID, body } = event;
-  const args = (body || "").trim().split(/\s+/);
-  const sub = (args[1] || "").toLowerCase();
+module.exports.onStart = async function ({ api, event, args, message, threadsData }) {
+  const { threadID } = event;
+  const sub = (args[0] || "").toLowerCase();
 
   if (!sub || !["on", "off"].includes(sub)) {
     const status = global.autoAddEnabled.get(threadID) ? "✅ চালু" : "❌ বন্ধ";
@@ -39,7 +37,7 @@ module.exports.onStart = async function ({ api, event, message, threadsData }) {
   const isEnable = sub === "on";
   global.autoAddEnabled.set(threadID, isEnable);
 
-  await threadsData.set(threadID, "autoAdd", isEnable);
+  try { await threadsData.set(threadID, "autoAdd", isEnable); } catch (e) {}
 
   return message.reply(
     isEnable
@@ -48,11 +46,11 @@ module.exports.onStart = async function ({ api, event, message, threadsData }) {
   );
 };
 
-module.exports.onLoad = async function ({ threadsData }) {
+module.exports.onLoad = async function () {
   try {
-    const allThreads = global.db.allThreadData || [];
+    const allThreads = (global.db && global.db.allThreadData) || [];
     for (const thread of allThreads) {
-      const status = thread.data?.autoAdd;
+      const status = thread?.data?.autoAdd;
       if (status === true) {
         global.autoAddEnabled.set(thread.threadID, true);
       }
@@ -81,24 +79,22 @@ module.exports.onEvent = async function ({ api, event }) {
     const botID = String(api.getCurrentUserID());
     if (leftUserID === botID) return;
 
-    // সামান্য delay দিয়ে add করা
+    const wasKicked =
+      logMessageData?.removedParticipantFbId &&
+      String(logMessageData.removedParticipantFbId) === leftUserID &&
+      String(author) !== leftUserID;
+
+    if (wasKicked) return;
+
     setTimeout(async () => {
       try {
         await api.addUserToGroup(leftUserID, threadID);
-
-        let userName = "User";
-        try {
-          const info = await api.getUserInfo([leftUserID]);
-          if (info && info[leftUserID]) userName = info[leftUserID].name || "User";
-        } catch (e) {}
-
+        const userName = await getName(api, leftUserID, "User");
         await api.sendMessage(
           `🔄 ${userName} leave করেছিল, bot আবার add করেছে! 😈`,
           threadID
         );
-      } catch (err) {
-        // add করতে না পারলে (permission না থাকলে) চুপ থাকবে
-      }
+      } catch (err) {}
     }, 2000);
 
   } catch (e) {}

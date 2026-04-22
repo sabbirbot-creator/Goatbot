@@ -1,6 +1,8 @@
+const { getName } = require("../../utils/getName.js");
+
 module.exports.config = {
   name: "welcome",
-  version: "1.0.0",
+  version: "1.1.0",
   role: 0,
   credits: "Ariful Islam Sabbir",
   description: "Group এ কেউ join করলে welcome message পাঠায়",
@@ -19,10 +21,13 @@ module.exports.onStart = async function ({ api, event }) {
   const botID = String(api.getCurrentUserID());
 
   for (const added of addedIDs) {
-    const userID = String(added.userFbId || added.id);
-    if (userID === botID) continue;
+    const userID = String(added.userFbId || added.id || "").replace(/^fbid:/, "");
+    if (!userID || userID === botID) continue;
 
-    const name = added.fullName || added.name || "বন্ধু";
+    let name = added.fullName || added.name || "";
+    if (!name || name === "Facebook User") {
+      name = await getName(api, userID, "বন্ধু");
+    }
 
     let memberCount = "?";
     try {
@@ -41,12 +46,12 @@ module.exports.onStart = async function ({ api, event }) {
       await api.sendMessage(
         {
           body: welcomeMsg,
-          mentions: [{ tag: name, id: userID, fromIndex: 11, length: name.length }]
+          mentions: [{ tag: name, id: userID, fromIndex: welcomeMsg.indexOf(name), length: name.length }]
         },
         threadID
       );
     } catch (e) {
-      await api.sendMessage(welcomeMsg, threadID);
+      try { await api.sendMessage(welcomeMsg, threadID); } catch (_) {}
     }
   }
 };
