@@ -1,62 +1,74 @@
 const axios = require("axios");
 
+const SABBIR_API = "https://sabbir-simisimi-api-71u6.onrender.com";
+const CYBERBOT_API = "https://simsimi.cyberbot.top";
+
 module.exports.config = {
-  name: "autoreply",
-  version: "1.3.0",
+  name: "autoreplybot",
+  version: "3.2.0",
   hasPermssion: 0,
-  credits: "Sabbir",
-  description: "Reply on Bot's message or specific keywords",
+  credits: "Ariful Islam Sabbir",
+  hidden: true,
   usePrefix: false,
-  category: "chat"
+  category: "Chat",
+  cooldowns: 1
 };
 
-module.exports.onStart = async function ({ message, event, api }) {
-  const { body, messageReply, senderID } = event;
-  const botID = api.getCurrentUserID();
+module.exports.onChat = async function ({ message, event, api }) {
+  const { body, senderID, threadID } = event;
+  if (!body || senderID == api.getCurrentUserID()) return;
 
-  if (!body || senderID == botID) return;
+  const prefix = global.GoatBot?.config?.prefix || "/";
+  if (body.startsWith(prefix)) return;
+
   const msg = body.toLowerCase().trim();
 
-  // ১. ফিক্সড কিওয়ার্ড রিপ্লাই (বট সরাসরি এগুলো বলবে)
-  const fixedReplies = {
-    "hi": "হেই জানু! বলো কী খবর? 😍",
-    "hello": "হ্যালো কিউট বেবি! 🥰",
-    "সালাম": "ওয়ালাইকুম আসসালাম রহমতুল্লাহ! ❤️",
-    "assalamualaikum": "ওয়ালাইকুম আসসালাম! ❤️",
-    "কি করো": "তোমার কথা ভাবছি! 🙈"
+  // ১. ফিক্সড রিপ্লাই
+  const quickResponses = {
+    "hi": "হেই😜",
+    "hello": "বলো জান 🥰",
+    "salam": "Walaikumassalam❤️‍🩹",
+    "assalamualaikum": "Walaikumassalam❤️‍🩹"
   };
+  if (quickResponses[msg]) return message.reply(quickResponses[msg]);
 
-  if (fixedReplies[msg]) {
-    return message.reply(fixedReplies[msg]);
-  }
-
-  // ২. চেক: বটের মেসেজে রিপ্লাই অথবা কিওয়ার্ড দিয়ে শুরু
-  const isReplyToBot = messageReply && String(messageReply.senderID) === String(botID);
-  
-  const keywords = ["bby", "baby", "jan", "suna", "robot", "simi", "বট", "বেবি"];
-  const hasKeyword = keywords.some(word => msg.startsWith(word));
-
-  if (isReplyToBot || hasKeyword) {
-    // কিওয়ার্ড বাদ দিয়ে মেইন প্রশ্ন বের করা
-    let query = body;
-    keywords.forEach(word => {
-      if (msg.startsWith(word)) {
-        query = body.slice(word.length).trim();
-      }
-    });
+  try {
+    let botReply = "";
 
     try {
-      // ৩. সাইবারবট থেকে ডাইনামিক রিপ্লাই আনা
-      const res = await axios.get(`https://simsimi.cyberbot.top/simsimi?text=${encodeURIComponent(query || body)}`);
-      const reply = res.data.text || res.data.response;
-      
-      if (reply && !reply.includes("I don't know")) {
-        return message.reply(reply);
-      } else {
-        return message.reply("হুমম, বলো শুনছি! 😇");
-      }
-    } catch (err) {
-      console.error("Reply Error: " + err.message);
+      // ২. আপনার Sabbir API ট্রাই করা
+      const resMy = await axios.get(`${SABBIR_API}/simsimi?text=${encodeURIComponent(body)}`, { timeout: 5000 });
+      botReply = resMy.data.text || resMy.data.reply;
+    } catch (e) {
+      console.log("Sabbir API (502/Timeout) - Switching to Cyberbot");
     }
+
+    // ৩. আপনার API-তে উত্তর না থাকলে বা এরর হলে Cyberbot ব্যবহার করা
+    if (!botReply || botReply.includes("I don't know") || botReply.includes("বুঝতে পারিনি")) {
+      const resCyber = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(body)}`);
+      botReply = resCyber.data.text || resCyber.data.response;
+
+      if (botReply && !botReply.includes("I don't know")) {
+        // ৪. ব্যাকগ্রাউন্ডে আপনার API-তে Teach করা
+        const teachUrl = `${SABBIR_API}/teach?ask=${encodeURIComponent(body)}&ans=${encodeURIComponent(botReply)}&senderID=${senderID}&groupID=${threadID}`;
+        axios.get(teachUrl).catch(() => {}); 
+      }
+    }
+
+    if (botReply) return message.reply(botReply);
+
+  } catch (err) {
+    console.log("Final Error: " + err.message);
+  }
+};
+
+module.exports.onStart = async function ({ message, args }) {
+  const input = args.join(" ");
+  if (!input) return message.reply("বলো বেবি...");
+  try {
+    const res = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(input)}`);
+    message.reply(res.data.text || res.data.response || "হুমম...");
+  } catch (e) {
+    message.reply("API ডাউন আছে।");
   }
 };
