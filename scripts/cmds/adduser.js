@@ -10,7 +10,7 @@ module.exports.config = {
 };
 
 const axios = require("axios");
-  module.exports.onstart = async ({ api, event, args }) => {
+  module.exports.onStart = async ({ api, event, args }) => {
     const { threadID, messageID } = event;
     const out = msg => api.sendMessage(msg, threadID, messageID);
 
