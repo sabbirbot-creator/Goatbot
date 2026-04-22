@@ -1,11 +1,10 @@
 const axios = require("axios");
 
-const SABBIR_API = "https://sabbir-simisimi-api-71u6.onrender.com";
 const CYBERBOT_API = "https://simsimi.cyberbot.top";
 
 module.exports.config = {
   name: "autoreplybot",
-  version: "3.2.0",
+  version: "4.0.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
   hidden: true,
@@ -15,60 +14,59 @@ module.exports.config = {
 };
 
 module.exports.onChat = async function ({ message, event, api }) {
-  const { body, senderID, threadID } = event;
-  if (!body || senderID == api.getCurrentUserID()) return;
+  const { body, senderID } = event;
+  const botID = api.getCurrentUserID();
+
+  // ১. বট নিজে নিজেকে রিপ্লাই দিবে না
+  if (!body || senderID == botID) return;
 
   const prefix = global.GoatBot?.config?.prefix || "/";
   if (body.startsWith(prefix)) return;
 
   const msg = body.toLowerCase().trim();
 
-  // ১. ফিক্সড রিপ্লাই
+  // ২. ফিক্সড রিপ্লাই (এগুলো থেকেও ইমোজি সরাতে চাইলে সরাতে পারেন)
   const quickResponses = {
-    "hi": "হেই😜",
-    "hello": "বলো জান 🥰",
-    "salam": "Walaikumassalam❤️‍🩹",
-    "assalamualaikum": "Walaikumassalam❤️‍🩹"
+    "hi": "হেই",
+    "hello": "বলো জান",
+    "salam": "Walaikumassalam",
+    "assalamualaikum": "Walaikumassalam"
   };
+  
   if (quickResponses[msg]) return message.reply(quickResponses[msg]);
 
   try {
-    let botReply = "";
+    // ৩. সাইবারবট থেকে রিপ্লাই নেওয়া
+    const resCyber = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(body)}`);
+    let botReply = resCyber.data.text || resCyber.data.response;
 
-    try {
-      // ২. আপনার Sabbir API ট্রাই করা
-      const resMy = await axios.get(`${SABBIR_API}/simsimi?text=${encodeURIComponent(body)}`, { timeout: 5000 });
-      botReply = resMy.data.text || resMy.data.reply;
-    } catch (e) {
-      console.log("Sabbir API (502/Timeout) - Switching to Cyberbot");
+    if (botReply && !botReply.includes("I don't know")) {
+      
+      // ৪. ইমোজি ব্লকার (Regex ব্যবহার করে সব ইমোজি মুছে ফেলা)
+      const cleanReply = botReply.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+
+      // যদি ইমোজি সরানোর পর কিছু লেখা বাকি থাকে তবে সেটা পাঠাবে, নয়তো অরিজিনাল মেসেজ (যদি শুধু ইমোজিই উত্তর হয়)
+      const finalMsg = cleanReply || "হুমম..."; 
+      return message.reply(finalMsg);
     }
-
-    // ৩. আপনার API-তে উত্তর না থাকলে বা এরর হলে Cyberbot ব্যবহার করা
-    if (!botReply || botReply.includes("I don't know") || botReply.includes("বুঝতে পারিনি")) {
-      const resCyber = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(body)}`);
-      botReply = resCyber.data.text || resCyber.data.response;
-
-      if (botReply && !botReply.includes("I don't know")) {
-        // ৪. ব্যাকগ্রাউন্ডে আপনার API-তে Teach করা
-        const teachUrl = `${SABBIR_API}/teach?ask=${encodeURIComponent(body)}&ans=${encodeURIComponent(botReply)}&senderID=${senderID}&groupID=${threadID}`;
-        axios.get(teachUrl).catch(() => {}); 
-      }
-    }
-
-    if (botReply) return message.reply(botReply);
 
   } catch (err) {
-    console.log("Final Error: " + err.message);
+    console.log("Reply Error: " + err.message);
   }
 };
 
 module.exports.onStart = async function ({ message, args }) {
   const input = args.join(" ");
-  if (!input) return message.reply("বলো বেবি...");
+  if (!input) return message.reply("বলো...");
   try {
     const res = await axios.get(`${CYBERBOT_API}/simsimi?text=${encodeURIComponent(input)}`);
-    message.reply(res.data.text || res.data.response || "হুমম...");
+    let reply = res.data.text || res.data.response;
+    
+    // স্টার্ট কমান্ডেও ইমোজি ফিল্টার
+    const cleanReply = reply.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
+    
+    message.reply(cleanReply || "হুমম...");
   } catch (e) {
-    message.reply("API ডাউন আছে।");
+    message.reply("সার্ভার ডাউন।");
   }
 };
