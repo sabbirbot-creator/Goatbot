@@ -1,32 +1,50 @@
-const axios = require("axios");
-const API_URL = "https://simsimi.cyberbot.top";
+const axios = require('axios');
 
-module.exports.config = {
-  name: "autoreplybot",
-  version: "1.2.0",
-  hasPermssion: 0,
-  credits: "Ariful Islam Sabbir",
-  hidden: true,
-  usePrefix: false,
-  category: "Chat",
-  cooldowns: 2
-};
+module.exports = {
+  config: {
+    name: "simiAuto",
+    version: "9.0.0",
+    author: "Sabbir",
+    category: "system"
+  },
 
-module.exports.onChat = async function ({ message, event, api }) {
-  const { body, messageReply, senderID } = event;
-  const botID = api.getCurrentUserID();
+  onChat: async function ({ api, event }) {
+    if (!event.body || event.senderID == api.getCurrentUserID()) return;
 
-  // ১. যদি মেসেজ না থাকে বা মেসেজটি বট নিজে পাঠায়, তবে থেমে যাও
-  if (!body || senderID == botID) return;
+    const input = event.body.toLowerCase().trim();
+    const sabbirApi = "https://sabbir-simisimi-api-71u6.onrender.com";
+    const cyberbotApi = "https://simsimi.cyberbot.top";
 
-  const prefix = global.GoatBot?.config?.prefix || "/";
-  // ২. যদি মেসেজটি কোনো কমান্ড হয় (যেমন /help), তবে এই অটো রিপ্লাই কাজ করবে না
-  if (body.startsWith(prefix)) return;
+    try {
+      // ১. প্রথমে আপনার নিজের (Sabbir API) ডাটাবেজে চেক করা
+      const checkMyDb = await axios.get(`${sabbirApi}/simsimi?text=${encodeURIComponent(input)}`);
+      
+      // আপনার API যদি উত্তর দিতে না পারে (I don't know...) তবেই শিখতে যাবে
+      if (!checkMyDb.data || checkMyDb.data.text.includes("I don't know")) {
+        
+        // ২. Cyberbot API থেকে উত্তর নিয়ে আসা
+        const resCyber = await axios.get(`${cyberbotApi}/simsimi?text=${encodeURIComponent(input)}`);
+        const cyberReply = resCyber.data.text;
 
-  const msg = body.toLowerCase().trim();
+        if (cyberReply && !cyberReply.includes("I don't know")) {
+          // ৩. ইমোজি সরিয়ে আপনার Sabbir API-তে Teach করা
+          const cleanReply = cyberReply.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
 
-  // ৩. ফিক্সড রিপ্লাই চেক (এখানে স্প্যাম হওয়ার ভয় নেই)
-  const responses = {
+          if (cleanReply.length > 0) {
+            const teachUrl = `${sabbirApi}/teach?ask=${encodeURIComponent(input)}&ans=${encodeURIComponent(cleanReply)}`;
+            
+            // ব্যাকগ্রাউন্ডে আপনার ডাটাবেজে সেভ হচ্ছে
+            axios.get(teachUrl).catch(e => console.log("Sabbir DB Save Error"));
+          }
+
+          // ইউজারকে রিপ্লাই দেওয়া (অরিজিনাল উত্তরটিই দিবে)
+          return api.sendMessage(cyberReply, event.threadID, event.messageID);
+        }
+      } else {
+        // ৪. যদি আপনার নিজের ডাটাবেজেই উত্তর থাকে, তবে সেখান থেকেই রিপ্লাই দিবে
+        return api.sendMessage(checkMyDb.data.text, event.threadID, event.messageID);
+      }
+      const responses = {
     "hi": " হেই😜",
     "hello": "বলো জান 🥰",
     "assalamualaikum": "Walaikumassalam❤️‍🩹",
@@ -38,32 +56,8 @@ module.exports.onChat = async function ({ message, event, api }) {
     "cudi": "গালি দিলে কিক ফ্রি"
   };
 
-  if (responses[msg]) {
-    return message.reply(responses[msg]);
-  }
-
-  // ৪. যদি কেউ বটের মেসেজে রিপ্লাই দেয়, শুধু তখনই API কল হবে
-  if (messageReply && String(messageReply.senderID) === String(botID)) {
-    try {
-      const res = await axios.get(`${API_URL}?msg=${encodeURIComponent(body)}`);
-      const reply = res.data.reply || "বুঝতে পারিনি সোনা!";
-      return message.reply(reply);
-    } catch (err) {
-      // API এরর দিলে বারবার মেসেজ না পাঠিয়ে চুপ থাকা ভালো
-      return; 
+    } catch (error) {
+      console.error("System Error:", error.message);
     }
-  }
-};
-
-module.exports.onStart = async function ({ message, args }) {
-  const input = args.join(" ");
-  if (!input) return message.reply("কিছু একটা লিখে পাঠান...");
-
-  try {
-    const res = await axios.get(`${API_URL}?msg=${encodeURIComponent(input)}`);
-    const reply = res.data.reply || "বুঝতে পারিনি সোনা!";
-    return message.reply(reply);
-  } catch (err) {
-    return message.reply("API এ সমস্যা হচ্ছে, পরে ট্রাই করো।");
   }
 };
