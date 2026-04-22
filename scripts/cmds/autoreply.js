@@ -10,7 +10,7 @@ module.exports.config = {
   category: "chat"
 };
 
-module.exports.onChat = async function ({ message, event, api }) {
+module.exports.onStart = async function ({ message, event, api }) {
   const { body, messageReply, senderID } = event;
   const botID = api.getCurrentUserID();
 
