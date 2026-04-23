@@ -17,11 +17,10 @@ module.exports.config = {
 module.exports.onStart = async function () {};
 
 const voiceMessages = [
-  "সুন্দর ছবি পাঠিয়েছো!",
-  "বাহ! দারুণ তো!",
-  "আরে! এটা কী পাঠালে?",
-  "হাহা! মজার ছবি!",
-  "ছবিটা দেখলাম!"
+  "সর লাইকার আবাল!",
+  "ইমুজি দেইস নাহ!",
+  " আরে জান ইমুজি দিয়ো না?",
+  ""
 ];
 
 module.exports.onChat = async function ({ api, event, message }) {
@@ -31,7 +30,7 @@ module.exports.onChat = async function ({ api, event, message }) {
     if (!attachments || attachments.length === 0) return;
 
     const hasImage = attachments.some(a =>
-      ["photo", "sticker", "animated_image", "gif"].includes(a.type)
+      ["", "sticker", "", ].includes(a.type)
     );
 
     if (!hasImage) return;
