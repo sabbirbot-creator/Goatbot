@@ -55,17 +55,17 @@ module.exports.onStart = async ({ api, event, args, message }) => {
         if (memberIDs.length === 0) return message.reply("⚠️ Group এ কোনো member পাওয়া যায়নি।");
 
         const customMsg = args.slice(1).join(" ").trim();
+        const tag = "@everyone";
+        const prefix = "📢 ";
         const suffixText = customMsg ? `\n📝 ${customMsg}` : "\nসবাই চিপা থেকে বের হও 🐸";
+        const body = prefix + tag + suffixText;
 
-        let body = "📢 ";
-        const mentionList = [];
-        memberIDs.forEach((id, i) => {
-          const tag = "@everyone";
-          if (i > 0) body += " ";
-          mentionList.push({ tag, id, fromIndex: body.length, length: tag.length });
-          body += tag;
-        });
-        body += suffixText;
+        const mentionList = memberIDs.map(id => ({
+          tag,
+          id,
+          fromIndex: prefix.length,
+          length: tag.length
+        }));
 
         return api.sendMessage({ body, mentions: mentionList }, threadID);
       } catch (e) {

@@ -56,18 +56,14 @@ module.exports.onStart = async function ({ api, event, args, message }) {
 
       const name = await getName(api, sid, "এই user");
 
-      await new Promise(resolve => {
-        setTimeout(() => {
-          api.removeUserFromGroup(sid, threadID, (err) => {
-            if (err) {
-              api.sendMessage(`❌ ${name} কে kick করা যায়নি!`, threadID);
-            } else {
-              api.sendMessage(`👢 ${name} কে group থেকে বের করে দেওয়া হয়েছে!`, threadID);
-            }
-            resolve();
-          });
-        }, 1200);
-      });
+      await new Promise(r => setTimeout(r, 800));
+      try {
+        await api.removeUserFromGroup(sid, threadID);
+        await api.sendMessage(`👢 ${name} কে group থেকে বের করে দেওয়া হয়েছে!`, threadID);
+      } catch (kerr) {
+        console.error("kick failed:", kerr);
+        await api.sendMessage(`❌ ${name} কে kick করা যায়নি!\n${kerr.message || kerr.error || ""}`, threadID);
+      }
     }
   } catch (e) {
     console.error("kick error:", e);

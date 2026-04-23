@@ -79,23 +79,24 @@ module.exports.onEvent = async function ({ api, event }) {
     const botID = String(api.getCurrentUserID());
     if (leftUserID === botID) return;
 
-    const wasKicked =
-      logMessageData?.removedParticipantFbId &&
-      String(logMessageData.removedParticipantFbId) === leftUserID &&
-      String(author) !== leftUserID;
-
-    if (wasKicked) return;
-
     setTimeout(async () => {
+      const userName = await getName(api, leftUserID, "User");
       try {
-        await api.addUserToGroup(leftUserID, threadID);
-        const userName = await getName(api, leftUserID, "User");
+        await api.addUserToGroup([leftUserID], threadID);
         await api.sendMessage(
           `🔄 ${userName} leave করেছিল, bot আবার add করেছে! 😈`,
           threadID
         );
-      } catch (err) {}
+      } catch (err) {
+        console.error("autoadd failed:", err);
+        await api.sendMessage(
+          `⚠️ ${userName} কে auto-add করা যায়নি।\n${err.message || err.error || ""}`,
+          threadID
+        ).catch(() => {});
+      }
     }, 2000);
 
-  } catch (e) {}
+  } catch (e) {
+    console.error("autoadd onEvent error:", e);
+  }
 };
