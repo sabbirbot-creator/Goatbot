@@ -28,7 +28,7 @@ module.exports.onChat = async function ({ message, event, api }) {
   const quickResponses = {
     "hi": "হেই",
     "hello": "বলো জান",
-    "salam": "Walaikumassalam",
+    "bby": "ki oise bby🥹",
     "assalamualaikum": "Walaikumassalam"
   };
   
