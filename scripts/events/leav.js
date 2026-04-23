@@ -28,24 +28,22 @@ module.exports.onStart = async function ({ api, event }) {
   const botID = String(api.getCurrentUserID());
   if (leftUserID === botID) return;
 
-  const leftName = await getName(api, leftUserID, "একজন member");
-
-  const wasKicked =
-    logMessageData?.removedParticipantFbId &&
-    String(logMessageData.removedParticipantFbId) === leftUserID &&
-    String(author) !== leftUserID;
-
-  let leaveMsg;
-  if (wasKicked) {
-    const adminName = await getName(api, author, "একজন admin");
-    leaveMsg =
-      `👢 ${leftName} কে group থেকে বের করা হয়েছে!\n` +
-      `🛡️ Remove করেছে: ${adminName}`;
-  } else {
-    leaveMsg =
-      `😢 ${leftName} group ছেড়ে চলে গেছে!\n` +
-      `👋 আবার দেখা হবে...`;
+  if (global.recentKicks) {
+    const key = `${threadID}_${leftUserID}`;
+    const ts = global.recentKicks.get(key);
+    if (ts && Date.now() - ts < 30000) {
+      global.recentKicks.delete(key);
+      return;
+    }
   }
+
+  const wasKicked = String(author) && String(author) !== leftUserID;
+  if (wasKicked) return;
+
+  const leftName = await getName(api, leftUserID, "একজন member");
+  const leaveMsg =
+    `😢 ${leftName} group ছেড়ে চলে গেছে!\n` +
+    `👋 আবার দেখা হবে...`;
 
   try {
     await api.sendMessage(leaveMsg, threadID);

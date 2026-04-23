@@ -1,35 +1,8 @@
 {
-  "login": {
-    "success": "✅ Sabbir-FCA সক্রিয় হয়েছে! বট এখন অনলাইনে।",
-    "error": "❌ লগইন এরর: %1",
-    "noAppState": "❗ account.txt ফাইলটি পাওয়া যায়নি! দয়া করে চেক করুন।"
-  },
   "commands": {
-    "hi": "হ্যালো সাব্বির ভাই! ল্যাঙ্গুয়েজ ফাইল থেকে মেসেজ আসছে। ❤️",
-    "prefix": "আমার কোনো প্রিক্স নেই, সরাসরি কমান্ড লিখুন!",
-    "autoreact": {
-      "noPermission": "⚠ আরে ভাই থাম! 😂\nএই কমান্ড তোর জন্য না!\n\nতুই এইটা ইউজ করতে আসছস, আর আমি ভাবতেছি তুই সাহস পাইছস কই থেকে 😹\n\n👑 এইটা শুধু Boss 𝐒𝐀𝐁𝐁𝐈𝐑 এর রাজত্ব 👑🔥\nতুই এখনো গেটের বাইরেই আছস 🐸🚫"
-    },
-    "kick": {
-      "noMention": "❌ কাকে kick করবে? কাউকে mention করো!\nযেমন: /kick @name",
-      "notGroupAdmin": "🚫 শুধু group admin kick করতে পারবে!",
-      "cantKickAdmin": "🚫 Bot Admin বা Bot কে kick করা যাবে না!",
-      "success": "✅ %1 কে group থেকে বের করা হয়েছে! 🦵",
-      "error": "❌ Kick করতে পারিনি। Bot এর admin permission আছে কি?"
-    },
-    "tag": {
-      "usage": "❓ কীভাবে ব্যবহার করবে:\n\n• /tag all → সবাইকে একসাথে @everyone দিয়ে mention করবে\n• কোনো message এ reply করে /tag → সেই ব্যক্তিকে mention করবে",
-      "noParticipants": "❌ Tag করার মতো কেউ নেই।",
-      "tagAllError": "❌ সবাইকে tag করতে পারিনি।",
-      "replyError": "❌ User এর তথ্য পেতে পারিনি।"
-    },
     "restart": {
       "noPermission": "❌ শুধুমাত্র Admin এই command ব্যবহার করতে পারবে!",
       "restarting": "🔄 Bot restart হচ্ছে...\n⏳ কিছুক্ষণ অপেক্ষা করুন।"
     }
-  },
-  "system": {
-    "starting": "Sabbir-Mirai-Bot শুরু হচ্ছে...",
-    "errorStarting": "বট চালু করতে সমস্যা হয়েছে!"
   }
 }

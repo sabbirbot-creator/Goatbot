@@ -74,7 +74,12 @@ module.exports.onStart = async function ({ api, event, threadsData }) {
     }
 
     case "log:user-nickname": {
-      const targetID = logMessageData?.participant_id || logMessageData?.target;
+      const targetID = String(logMessageData?.participant_id || logMessageData?.target || "");
+      const botID = String(api.getCurrentUserID());
+      await refreshThreadMemory(api, threadID, threadsData);
+
+      if (targetID === botID) return;
+
       const newNick = logMessageData?.nickname || null;
       const targetName = await getName(api, targetID, "একজন member");
 
@@ -83,7 +88,6 @@ module.exports.onStart = async function ({ api, event, threadsData }) {
       } else {
         msg = `📛 Nickname সরিয়ে দেওয়া হয়েছে!\n\n👤 কে করেছে: ${authorName}\n🙍 কার: ${targetName}`;
       }
-      await refreshThreadMemory(api, threadID, threadsData);
       break;
     }
 

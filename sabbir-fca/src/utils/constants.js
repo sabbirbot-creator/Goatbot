@@ -2,7 +2,7 @@
 "use strict";
 
 const chalk = require("chalk");
-const ws = "ws3-fca";
+const ws = "sabbir-fca";
 
 let h;
 const i = {};

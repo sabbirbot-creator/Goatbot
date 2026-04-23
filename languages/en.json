@@ -1,79 +1,8 @@
 {
   "commands": {
-    "help": {
-      "page_invalid": "❌ Page %1 not found! There are %2 pages total.\nExample: %3help 1",
-      "cmd_not_found": "❌ No command \"%1\" found.\nSee all commands: %2help",
-      "cmd_info": "╔══✨ COMMAND INFO ✨═══╗\n\n📌 Command: %1%2\n📝 Description: %3\n🔧 Usage: %1%4\n📂 Category: %5\n⏱ Cooldown: %6s\n\n╚══════════════════════╝",
-      "header": "╔══✨ SABBiR CHAT BOT ✨═══╗\n\n👑 Owner: Ariful Islam Sabbir\n🤖 Bot: Sabbir Chat Bot\n📄 Page: %1/%2  |  📦 Total: %3\n\n",
-      "footer": "\n╠══════════════════════╣\n   💖 Powered by\n   Sabbir Chat Bot\n╚══════════════════════╝",
-      "next_page": "   ▶ Next page: %1help %2\n"
-    },
-    "ping": {
-      "pinging": "🏓 Pinging...",
-      "pong": "🏓 Pong!\n⚡ Response: %1ms"
-    },
-    "uid": {
-      "self": "🆔 Your UID:\n\n🔢 %1",
-      "reply_uid": "🆔 Replied user's UID:\n\n🔢 %1",
-      "info_header": "🆔 UID Info:\n\n"
-    },
-    "kick": {
-      "noMention": "❌ Who do you want to kick? Mention someone!\n\n📌 3 ways to kick:\n• Reply to a message and type /kick\n• /kick <UID>\n• /kick @name",
-      "notGroupAdmin": "🚫 Only group admins can kick members!",
-      "cantKickAdmin": "🚫 Cannot kick a Bot Admin or the Bot itself!",
-      "success": "✅ %1 has been removed from the group! 🦵",
-      "error": "❌ Could not kick. Does the Bot have admin permission?"
-    },
-    "tag": {
-      "usage": "❓ How to use:\n\n• /tag all → Mentions everyone with @everyone\n• Reply to a message and type /tag → Mentions that person",
-      "noParticipants": "❌ No one to tag.",
-      "tagAllError": "❌ Could not tag everyone.",
-      "replyError": "❌ Could not fetch user info."
-    },
-    "info": {
-      "template": "╔══✨ BOT INFO ✨══╗\n\n🤖 Name: %1\n🔢 Bot ID: %2\n📌 Prefix: %3\n📦 Commands: %4\n⏱ Uptime: %5d %6h %7m\n🕐 Time: %8\n⚙️ Node: %9\n\n╠══════════════════════╣\n  👑 ADMIN INFO\n╠══════════════════════╣\n\n👤 Name: Md Ariful Islam Sabbir\n📚 Class: 12+\n☪️ Religion: Islam\n💔 Status: Single\n\n╠══════════════════════╣\n  💖 Powered by Sabbir Chat Bot\n╚══════════════════════╝"
-    },
-    "uptime": {
-      "template": "╔══════════════════╗\n   𝐆𝐎𝐀𝐓 𝐁𝐎𝐓 𝐒𝐘𝐒𝐓𝐄𝐌 \n╚══════════════════╝\n  │\n  ├─ ᴜᴘᴛɪᴍᴇ: %1 ⏳\n  ├─ ʟᴀᴛᴇɴᴄʏ: %2ᴍꜱ ⚡\n  ├─ ᴘʟᴀᴛꜰᴏʀᴍ: ʟɪɴᴜx 🌐\n  ├─ ᴠᴇʀsɪᴏɴ: ᴠ1.0.0 🤖\n  ├─ ꜱᴛᴀᴛᴜs: ᴀᴄᴛɪᴠᴇ 🟢\n  └─ ᴘʀɪᴠᴀᴄʏ: ꜱᴇᴄᴜʀᴇᴅ 🔒"
-    },
-    "owner": {
-      "info": "╔══✨ OWNER INFO ✨══╗\n\n👤 Name: Md Ariful Islam Sabbir\n📚 Class: 12+\n☪️ Religion: Islam\n💔 Status: Single\n👑 Role: Bot Admin & Developer\n\n╠══════════════════════╣\n  💖 Powered by Sabbir Chat Bot\n╚══════════════════════╝",
-      "fetch_error": "❌ Could not load owner image, showing text only."
-    },
-    "pp": {
-      "result": "🖼️ %1 Profile Picture\n🔢 UID: %2",
-      "error": "❌ Could not fetch profile picture.",
-      "self_label": "Your",
-      "reply_label": "Replied user's"
-    },
     "restart": {
       "noPermission": "❌ Only admins can use this command!",
       "restarting": "🔄 Bot is restarting...\n⏳ Please wait a moment."
-    },
-    "time": {
-      "template": "🕐 Current Time:\n\n📅 Date: %1\n📆 Day: %2\n⏰ Time: %3 (BD)"
-    },
-    "teach": {
-      "usage": "📚 How to teach Baby Bot:\n\n/teach q <question> a <answer>\n\nExamples:\n/teach q hi a hello\n/teach q how are you a I'm fine, thanks!",
-      "invalid_format": "❌ Wrong format!\n\nCorrect format:\n/teach q <question> a <answer>\n\nExample: /teach q hi a hello",
-      "empty_fields": "❌ Question or answer cannot be empty!\n\nExample: /teach q hi a hello",
-      "success": "✅ Taught successfully!\n\n❓ Question: %1\n💬 Answer: %2\n\n🔍 Test: %3",
-      "save_error": "❌ Failed to save. Please try again later."
-    },
-    "spam": {
-      "kicked": "🚫 Kicked!\n@%1 was spamming continuously — removed from the group! 🦵",
-      "warning": "⚠️ Warning!\n@%1 stop spamming! 😤\n%2 more and you're out! 🚫"
-    },
-    "autoreact": {
-      "noPermission": "🚫 You don't have permission to use this command!\nOnly Bot Admins can toggle AutoReact.",
-      "usage": "📌 Usage:\n/autoreact on — to enable\n/autoreact off — to disable",
-      "enabled": "✅ AutoReact enabled!\nAll messages will now get a random reaction:\n%1",
-      "disabled": "❌ AutoReact disabled!",
-      "error": "⚠️ Something went wrong: %1"
     }
-  },
-  "system": {
-    "starting": "Sabbir Chat Bot is starting...",
-    "errorStarting": "Failed to start the bot!"
   }
 }
