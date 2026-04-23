@@ -30,7 +30,7 @@ module.exports.onStart = async function ({ api, event }) {
 
   if (!jsFile) {
     return api.sendMessage(
-      "❌ কোনো JS ফাইল পাওয়া যায়নি!\n\n📌 কীভাবে ব্যবহার করবে:\n• /install লিখে সাথে .js ফাইল attach করে পাঠাও\n• অথবা কোনো .js ফাইল এর reply এ /install লিখো",
+      "❌ কোনো JS ফাইল পাওয়া যায়নি!",
       threadID,
       messageID
     );
@@ -40,7 +40,7 @@ module.exports.onStart = async function ({ api, event }) {
   const fileUrl = jsFile.url;
   const savePath = path.normalize(path.join(process.cwd(), "scripts", "cmds", fileName));
 
-  await api.sendMessage(`⏳ "${fileName}" ডাউনলোড হচ্ছে...`, threadID);
+  await api.sendMessage(`⏳ "${fileName}" সেভ হচ্ছে...`, threadID);
 
   try {
     const response = await axios.get(fileUrl, { responseType: "text", timeout: 15000 });
