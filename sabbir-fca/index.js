@@ -53,7 +53,7 @@ global.Fca = new Object({
             },
             "AntiGetInfo": {
                 "Database_Type": "default",
-                "AntiGetThreadInfo": true,
+                "AntiGetThreadInfo": false,
                 "AntiGetUserInfo": true
             },
             "Stable_Version": {
