@@ -13,7 +13,7 @@ const logHandler = require("./utils/Log.js");
 process.env.BLUEBIRD_W_FORGOTTEN_RETURN = 0;
 
 const dirConfig = path.normalize(`${__dirname}/config.json`);
-//const dirConfigCommands = path.normalize(`${__dirname}/configCommands.json`);
+const dirConfigCommands = path.normalize(`${__dirname}/configCommands.json`);
 const dirAccount = path.normalize(`${__dirname}/account.txt`);
 
 const config = require(dirConfig);
