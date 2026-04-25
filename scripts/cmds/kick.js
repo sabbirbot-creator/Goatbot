@@ -1,6 +1,18 @@
 const { getName } = require("../../utils/getName.js");
 const { resolveTargets } = require("../../utils/resolveTarget.js");
 
+function isDisabledOrGenericName(n) {
+  if (!n) return true;
+  const s = String(n).trim().toLowerCase();
+  if (!s) return true;
+  return s === "facebook user"
+    || s === "facebook ইউজার"
+    || s.includes("facebook user")
+    || s.includes("facebook ইউজার")
+    || s === "messenger user"
+    || s === "user";
+}
+
 if (!global.recentKicks) global.recentKicks = new Map();
 
 module.exports.config = {
@@ -12,7 +24,7 @@ module.exports.config = {
   description: "Group theke user kick kora",
   usePrefix: true,
   category: "group",
-  usages: "[@tag] / [reply] / [uid]",
+  usages: "[@tag] / [reply] / [uid] / disable id",
   countDown: 2,
   cooldowns: 0
 };
@@ -49,6 +61,59 @@ module.exports.onStart = async function ({ api, event, args, message }) {
 
   if (!adminIDs.includes(String(senderID)))
     return message.reply("⛔ এই কাজটি শুধুমাত্র group admin করতে পারবে।");
+
+  // ────────── /kick disable id  → kick all disabled / "Facebook User" accounts ──────────
+  const subcmd = (args[0] || "").toLowerCase();
+  const subcmd2 = (args[1] || "").toLowerCase();
+  const isDisableMode = (subcmd === "disable" && (subcmd2 === "id" || subcmd2 === "ids"))
+                     || subcmd === "disableid"
+                     || subcmd === "disabledid"
+                     || subcmd === "disabled";
+
+  if (isDisableMode) {
+    const userInfo = threadInfo.userInfo || [];
+    const allIDs = (threadInfo.participantIDs || userInfo.map(p => p.id)).map(String);
+    const byId = new Map(userInfo.map(p => [String(p.id), p]));
+
+    // Build candidate disabled IDs (generic name OR no name at all)
+    const disabledIDs = [];
+    for (const id of allIDs) {
+      if (id === botID) continue;
+      if (adminIDs.includes(id)) continue;
+      if (id === String(senderID)) continue;
+      const p = byId.get(id);
+      const name = p ? (p.name || p.firstName || "") : "";
+      if (isDisabledOrGenericName(name)) disabledIDs.push(id);
+    }
+
+    if (disabledIDs.length === 0) {
+      return message.reply("✅ Ei group e kono disabled / Facebook User account paini. Shob member er real name ache.");
+    }
+
+    await message.reply(`🔍 ${disabledIDs.length} ti disabled/Facebook User account paoa gechhe. Kick shuru hocche...`);
+
+    let success = 0, failed = 0;
+    for (const id of disabledIDs) {
+      try {
+        await api.removeUserFromGroup(id, threadID);
+        global.recentKicks.set(`${threadID}_${id}`, Date.now());
+        success++;
+      } catch (e) {
+        console.error(`[kick disable id] failed for ${id}:`, e?.message || e);
+        failed++;
+      }
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    return api.sendMessage(
+      `👢 Disable ID kick complete!\n\n` +
+      `✅ Success: ${success}\n` +
+      `❌ Failed: ${failed}\n` +
+      `📊 Total found: ${disabledIDs.length}`,
+      threadID
+    );
+  }
+  // ────────── End /kick disable id ──────────
 
   const result = await resolveTargets({ api, event, args });
 
