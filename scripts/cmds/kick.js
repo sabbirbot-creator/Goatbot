@@ -1,5 +1,7 @@
 const { getName } = require("../../utils/getName.js");
 const { resolveTargets } = require("../../utils/resolveTarget.js");
+const activityTracker = require("../../utils/activityTracker.js");
+const { digital, header, footer, divider, relativeTime } = require("../../utils/style.js");
 
 function isDisabledOrGenericName(n) {
   if (!n) return true;
@@ -24,7 +26,7 @@ module.exports.config = {
   description: "Group theke user kick kora",
   usePrefix: true,
   category: "group",
-  usages: "[@tag] / [reply] / [uid] / disable id",
+  usages: "[@tag] / [reply] / [uid] / disable id / inactive <days>",
   countDown: 2,
   cooldowns: 0
 };
@@ -69,6 +71,87 @@ module.exports.onStart = async function ({ api, event, args, message }) {
                      || subcmd === "disableid"
                      || subcmd === "disabledid"
                      || subcmd === "disabled";
+
+  // ────────── /kick inactive <days> ──────────
+  if (subcmd === "inactive" || subcmd === "inactives" || subcmd === "silent") {
+        const days = parseInt(args[1]);
+        if (!days || days < 1 || days > 365) {
+                return message.reply(
+                        `${header("KICK INACTIVE")}\n` +
+                        `│ ⚠️ Days bolun (1-365)\n` +
+                        `│ Example: /kick inactive 7\n` +
+                        `${footer()}`
+                );
+        }
+
+        const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+        const userInfo = threadInfo.userInfo || [];
+        const allIDs = (threadInfo.participantIDs || userInfo.map(p => p.id)).map(String);
+        const byId = new Map(userInfo.map(p => [String(p.id), p]));
+
+        const inactiveList = [];
+        for (const id of allIDs) {
+                if (id === botID) continue;
+                if (adminIDs.includes(id)) continue;
+                if (id === String(senderID)) continue;
+                const lastSeen = activityTracker.getLastSeen(threadID, id);
+                if (!lastSeen || lastSeen < cutoff) {
+                        const p = byId.get(id);
+                        inactiveList.push({
+                                id,
+                                name: (p && (p.name || p.firstName)) || "Unknown",
+                                lastSeen: lastSeen,
+                                inactiveFor: lastSeen ? (Date.now() - lastSeen) : null
+                        });
+                }
+        }
+
+        if (inactiveList.length === 0) {
+                return message.reply(
+                        `${header("KICK INACTIVE")}\n` +
+                        `│ ✅ ${digital(days)} din+ inactive kau nei\n` +
+                        `${footer()}`
+                );
+        }
+
+        let preview = `${header("KICK INACTIVE")}\n`;
+        preview += `│ 📅 Days: ${digital(days)}\n`;
+        preview += `│ 🎯 Found: ${digital(inactiveList.length)} jon\n`;
+        preview += `${divider()}\n`;
+        const showCount = Math.min(inactiveList.length, 10);
+        for (let i = 0; i < showCount; i++) {
+                const u = inactiveList[i];
+                const last = u.inactiveFor ? `${relativeTime(u.inactiveFor)} ago` : "never tracked";
+                preview += `│ ${digital(i + 1)}. ${u.name} — ${last}\n`;
+        }
+        if (inactiveList.length > 10) preview += `│ ... +${digital(inactiveList.length - 10)} more\n`;
+        preview += `${divider()}\n│ ⏳ Kick shuru hocche...\n${footer()}`;
+        await message.reply(preview);
+
+        let success = 0, failed = 0;
+        for (const u of inactiveList) {
+                try {
+                        await api.removeUserFromGroup(u.id, threadID);
+                        global.recentKicks.set(`${threadID}_${u.id}`, Date.now());
+                        success++;
+                } catch (e) {
+                        console.error(`[kick inactive] failed ${u.id}:`, e?.message || e);
+                        failed++;
+                }
+                await new Promise(r => setTimeout(r, 800));
+        }
+
+        return api.sendMessage(
+                `${header("INACTIVE KICK DONE")}\n` +
+                `│ ✅ Success: ${digital(success)}\n` +
+                `│ ❌ Failed:  ${digital(failed)}\n` +
+                `│ 📊 Total:   ${digital(inactiveList.length)}\n` +
+                `│ 📅 Cutoff:  ${digital(days)} din\n` +
+                `${footer()}`,
+                threadID
+        );
+  }
+  // ────────── End /kick inactive ──────────
 
   if (isDisableMode) {
     const userInfo = threadInfo.userInfo || [];

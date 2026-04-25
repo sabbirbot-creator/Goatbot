@@ -201,6 +201,14 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                         |                                                        WHEN CALL COMMAND                                                              |
                         +-----------------------------------------------+
                 */
+                // ────────── Activity tracker (for /kick inactive) ──────────
+                try {
+                        const activityTracker = require("../../utils/activityTracker.js");
+                        if (event.type === "message" && senderID && threadID) {
+                                activityTracker.record(threadID, senderID);
+                        }
+                } catch (e) { /* ignore */ }
+
                 let isUserCallCommand = false;
                 async function onStart() {
                         let cmdBody = body;
@@ -302,13 +310,27 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 
                                 createMessageSyntaxError(commandName);
                                 const getText2 = createGetText2(langCode, `${process.cwd()}/languages/cmds/${langCode}.js`, prefix, command);
-                                await command.onStart({
-                                        ...parameters,
-                                        args,
-                                        commandName,
-                                        getLang: getText2,
-                                        removeCommandNameFromBody
-                                });
+
+                                // ────────── Typing indicator ON ──────────
+                                let stopTyping = null;
+                                try {
+                                        if (typeof api.sendTypingIndicator === "function") {
+                                                stopTyping = api.sendTypingIndicator(threadID, () => { }, isGroup);
+                                        }
+                                } catch (e) { /* ignore */ }
+
+                                try {
+                                        await command.onStart({
+                                                ...parameters,
+                                                args,
+                                                commandName,
+                                                getLang: getText2,
+                                                removeCommandNameFromBody
+                                        });
+                                } finally {
+                                        // ────────── Typing indicator OFF ──────────
+                                        try { if (typeof stopTyping === "function") stopTyping(() => { }); } catch (e) { /* ignore */ }
+                                }
                                 timestamps[senderID] = dateNow;
                                 log.info("CALL COMMAND", `${commandName} | ${userData.name} | ${senderID} | ${threadID} | ${args.join(" ")}`);
                         }
