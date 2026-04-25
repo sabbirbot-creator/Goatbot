@@ -37,7 +37,7 @@ global.GoatBot = {
         onReaction: new Map(),
         onAnyEvent: [],
         config,
-        configCommands,
+        //configCommands,
         envCommands: {},
         envEvents: {},
         envGlobal: {},
