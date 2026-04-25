@@ -1,4 +1,5 @@
 const { getName } = require("../../utils/getName.js");
+const { resolveTargets } = require("../../utils/resolveTarget.js");
 
 if (!global.recentKicks) global.recentKicks = new Map();
 
@@ -49,18 +50,11 @@ module.exports.onStart = async function ({ api, event, args, message }) {
   if (!adminIDs.includes(String(senderID)))
     return message.reply("⛔ এই কাজটি শুধুমাত্র group admin করতে পারবে।");
 
-  let targets = extractMentionIDs(mentions);
-
-  if (targets.length === 0 && type === "message_reply" && messageReply && messageReply.senderID) {
-    targets = [String(messageReply.senderID)];
-  }
-
-  if (targets.length === 0 && args[0] && /^\d{5,}$/.test(args[0])) {
-    targets = [args[0]];
-  }
+  const resolved = await resolveTargets({ api, event, args });
+  let targets = resolved.map(r => r.uid);
 
   if (targets.length === 0) {
-    return message.reply("📌 ব্যবহার:\n• /kick @mention\n• Reply দিয়ে /kick\n• /kick <UID>");
+    return message.reply("📌 ব্যবহার:\n• /kick @mention\n• /kick @name (group member er name)\n• Reply দিয়ে /kick\n• /kick <UID>");
   }
 
   for (const id of targets) {

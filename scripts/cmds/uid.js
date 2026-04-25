@@ -1,60 +1,26 @@
+const { resolveTargets } = require("../../utils/resolveTarget.js");
+
 module.exports.config = {
   name: "uid",
-  version: "1.0.0",
+  version: "1.1.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
   description: "নিজের বা অন্যের UID দেখাও",
   usePrefix: true,
   category: "Info",
-  usages: "uid [@mention | reply]",
+  usages: "uid [@mention | @name | reply | uid]",
   cooldowns: 3
 };
 
-async function resolveTargets(api, event) {
-  const { mentions, senderID, messageReply, threadID, body } = event;
+module.exports.onStart = async function ({ api, message, event, args }) {
+  const targets = await resolveTargets({ api, event, args });
 
-  const mentionIDs = mentions && typeof mentions === "object"
-    ? Object.keys(mentions).filter(id => id && id !== "null" && id !== senderID)
-    : [];
-
-  if (mentionIDs.length > 0) {
-    return mentionIDs.map(uid => ({
-      uid,
-      name: (mentions[uid] || "").replace(/^@/, "").trim() || uid
-    }));
-  }
-
-  if (messageReply) {
-    return [{ uid: messageReply.senderID, name: null }];
-  }
-
-  const args = (body || "").trim().split(/\s+/);
-  const nameQuery = args.slice(1).join(" ").replace(/^@/, "").toLowerCase().trim();
-
-  if (nameQuery) {
-    try {
-      const threadInfo = await api.getThreadInfo(threadID);
-      const participants = threadInfo.userInfo || [];
-      const matched = participants.find(p =>
-        p.name && p.name.toLowerCase().includes(nameQuery)
-      );
-      if (matched) {
-        return [{ uid: matched.id, name: matched.name }];
-      }
-    } catch (e) {}
-  }
-
-  return [{ uid: senderID, name: null }];
-}
-
-module.exports.onStart = async function ({ api, message, event }) {
-  const targets = await resolveTargets(api, event);
-
-  if (targets.length === 1 && targets[0].uid === event.senderID && !targets[0].name) {
+  // Kichu na pawa gele nije'r UID return koro
+  if (targets.length === 0) {
     return message.reply(`🆔 তোমার UID:\n\n🔢 ${event.senderID}`);
   }
 
-  if (targets.length === 1 && event.messageReply && targets[0].uid === event.messageReply.senderID) {
+  if (targets.length === 1 && targets[0].source === "reply") {
     return message.reply(`🆔 Reply করা ব্যক্তির UID:\n\n🔢 ${targets[0].uid}`);
   }
 
