@@ -4,8 +4,7 @@
   "description": "Made By ARIFUL ISLAM",
   "main": "Sabbir.js",
   "engines": {
-    "node": "20.x",
-    "npm": ">=10.0.0 <13.0.0"
+    "node": "18.x"
   },
   "scripts": {
     "start": "node Sabbir.js",
