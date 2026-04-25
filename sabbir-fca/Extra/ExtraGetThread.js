@@ -6,7 +6,10 @@ const logger = require("../logger");
 const getText = global.Fca.getText;
 var language = require("../Language/index.json");
 const fs = require("fs");
-language = language.find(i => i.Language == require(process.cwd() + "/FastConfigFca.json").Language).Folder.ExtraGetThread;
+
+// পরিবর্তন: সরাসরি ফাইল রিকয়ার করার বদলে গ্লোবাল ভ্যারিয়েবল থেকে ল্যাঙ্গুয়েজ নেওয়া হচ্ছে
+language = language.find(i => i.Language == global.Fca.Require.FastConfig.Language).Folder.ExtraGetThread;
+
 const Always_True = [];
 if (global.Fca.Require.FastConfig.AntiGetInfo.Database_Type == "json") {
     if (!fs.existsSync(process.cwd() + "/Horizon_Database/Threads.json")) {
@@ -14,7 +17,8 @@ if (global.Fca.Require.FastConfig.AntiGetInfo.Database_Type == "json") {
     }
 }
 else if (global.Fca.Require.FastConfig.AntiGetInfo.Database_Type != "default" && global.Fca.Require.FastConfig.AntiGetInfo.Database_Type != "json") {
-    logger.Warning("Database_Type in FastConfigFca.json is not valid. Only default and json are valid.");
+    // পরিবর্তন: logger ব্যবহার করা হয়েছে
+    logger.Warning("Database_Type in FastConfig is not valid. Only default and json are valid.");
     process.exit(0);
 }
 
@@ -126,10 +130,10 @@ exports.getData = function(threadID) {
     }
     else if (global.Fca.Require.FastConfig.AntiGetInfo.Database_Type == "json") {
         try {
+            var data = require(process.cwd() + "/Horizon_Database/Threads.json");
             let Sw;
             if (Always_True.includes(threadID)) Sw = true
             else Sw = data.hasOwnProperty(String(threadID))
-            var data = require(process.cwd() + "/Horizon_Database/Threads.json");
             switch (Sw) {
                 case true: {
                     return data[String(threadID)];
@@ -336,10 +340,10 @@ exports.getLastRun = function(Name) {
     }
     else if (global.Fca.Require.FastConfig.AntiGetInfo.Database_Type == "json") {
         try {
+            var data = require(process.cwd() + "/Horizon_Database/Threads.json");
             let Sw;
             if (Always_True.includes(Name)) Sw = true;
             else Sw = data.hasOwnProperty(String(Name));
-            var data = require(process.cwd() + "/Horizon_Database/Threads.json");
             switch (Sw) {
                 case true: {
                     return data[String(Name)];
