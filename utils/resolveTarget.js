@@ -24,36 +24,51 @@ function extractMentionIDs(mentions, excludeIDs) {
         return [];
 }
 
-function findByName(participants, query) {
+// Strict name matching: requires that EVERY word in the query is present
+// in the participant's name (as a whole word, a prefix, or a substring).
+// Returns ranked candidates. Caller decides what to do with ambiguity.
+function findByName(participants, query, excludeIDs) {
         if (!query || !participants || !participants.length) return [];
+        const exclude = new Set((excludeIDs || []).map(String));
         const nq = normalize(query.replace(/^@+/, ""));
         if (!nq) return [];
         const words = nq.split(" ").filter(Boolean);
+        if (words.length === 0) return [];
 
         const scored = [];
         for (const p of participants) {
+                if (!p || !p.id || exclude.has(String(p.id))) continue;
                 const pname = normalize(p.name || p.firstName || "");
                 if (!pname) continue;
-
-                if (pname === nq) { scored.push({ p, score: 1000 }); continue; }
-                if (pname.includes(nq)) { scored.push({ p, score: 500 + (nq.length / pname.length) * 100 }); continue; }
-
                 const pwords = pname.split(" ").filter(Boolean);
-                let matched = 0;
-                for (const w of words) {
-                        if (!w) continue;
-                        if (pwords.some(pw => pw === w)) matched += 2;
-                        else if (pwords.some(pw => pw.startsWith(w) || w.startsWith(pw))) matched += 1;
-                        else if (pname.includes(w)) matched += 0.5;
+
+                // Exact full-name match — top priority
+                if (pname === nq) { scored.push({ p, score: 10000, allMatched: true }); continue; }
+
+                // Full phrase substring match
+                if (pname.includes(nq) || nq.includes(pname)) {
+                        scored.push({ p, score: 5000 + Math.min(nq.length, pname.length), allMatched: true });
+                        continue;
                 }
-                if (matched > 0) scored.push({ p, score: matched });
+
+                // Per-word strict matching: every query word must hit
+                let total = 0;
+                let allMatched = true;
+                for (const w of words) {
+                        let best = 0;
+                        for (const pw of pwords) {
+                                if (pw === w) { best = Math.max(best, 10); }
+                                else if (pw.startsWith(w) || w.startsWith(pw)) { best = Math.max(best, 6); }
+                                else if (pw.includes(w) || w.includes(pw)) { best = Math.max(best, 3); }
+                        }
+                        if (best === 0) { allMatched = false; break; }
+                        total += best;
+                }
+                if (allMatched) scored.push({ p, score: total, allMatched: true });
         }
 
         scored.sort((a, b) => b.score - a.score);
-        if (scored.length === 0) return [];
-        const best = scored[0].score;
-        if (best < 1) return [];
-        return scored.filter(s => s.score === best).map(s => s.p);
+        return scored;
 }
 
 async function resolveTargets({ api, event, args, includeSelfFromMention = false, includeBot = false }) {
@@ -66,43 +81,72 @@ async function resolveTargets({ api, event, args, includeSelfFromMention = false
         // 1) Real FB mentions
         const mentionIDs = extractMentionIDs(mentions, exclude);
         if (mentionIDs.length > 0) {
-                return mentionIDs.map(uid => ({
-                        uid,
-                        name: (mentions[uid] || "").replace(/^@/, "").trim() || null,
-                        source: "mention"
-                }));
+                return {
+                        targets: mentionIDs.map(uid => ({
+                                uid,
+                                name: (mentions[uid] || "").replace(/^@/, "").trim() || null,
+                                source: "mention"
+                        })),
+                        ambiguous: false
+                };
         }
 
         // 2) Reply
         if (messageReply && messageReply.senderID) {
-                return [{ uid: String(messageReply.senderID), name: null, source: "reply" }];
+                return {
+                        targets: [{ uid: String(messageReply.senderID), name: null, source: "reply" }],
+                        ambiguous: false
+                };
         }
 
-        // 3) Numeric UID args
+        // 3) Numeric UID args (only those that look like FB IDs: 5+ digits)
         const uidArgs = (args || []).filter(a => /^\d{5,}$/.test(String(a)));
         if (uidArgs.length > 0) {
-                return uidArgs.map(u => ({ uid: String(u), name: null, source: "uid" }));
+                return {
+                        targets: uidArgs.map(u => ({ uid: String(u), name: null, source: "uid" })),
+                        ambiguous: false
+                };
         }
 
-        // 4) Name search: take whole tail of body (after the command name)
+        // 4) Name search across thread participants (strict: all words must hit)
         const rawArgs = (args && args.length) ? args : ((body || "").trim().split(/\s+/).slice(1));
         const nameQuery = rawArgs.join(" ").trim();
         if (nameQuery) {
                 try {
                         const info = await api.getThreadInfo(threadID);
                         const participants = info.userInfo || [];
-                        const matched = findByName(participants, nameQuery);
-                        if (matched.length > 0) {
-                                return matched.map(m => ({
-                                        uid: String(m.id),
-                                        name: m.name || null,
-                                        source: "name"
-                                }));
+                        const ranked = findByName(participants, nameQuery, exclude);
+                        if (ranked.length === 0) {
+                                return { targets: [], ambiguous: false, query: nameQuery };
                         }
-                } catch (e) { /* ignore */ }
+                        const top = ranked[0];
+                        // Ambiguous if 2+ candidates tied at top score
+                        const tied = ranked.filter(r => r.score === top.score);
+                        if (tied.length > 1) {
+                                return {
+                                        targets: [],
+                                        ambiguous: true,
+                                        query: nameQuery,
+                                        candidates: tied.slice(0, 5).map(t => ({
+                                                uid: String(t.p.id),
+                                                name: t.p.name || null
+                                        }))
+                                };
+                        }
+                        return {
+                                targets: [{
+                                        uid: String(top.p.id),
+                                        name: top.p.name || null,
+                                        source: "name"
+                                }],
+                                ambiguous: false
+                        };
+                } catch (e) {
+                        return { targets: [], ambiguous: false, error: e.message || String(e) };
+                }
         }
 
-        return [];
+        return { targets: [], ambiguous: false };
 }
 
 module.exports = { resolveTargets, extractMentionIDs, findByName, normalize };

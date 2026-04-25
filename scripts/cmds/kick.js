@@ -50,10 +50,22 @@ module.exports.onStart = async function ({ api, event, args, message }) {
   if (!adminIDs.includes(String(senderID)))
     return message.reply("⛔ এই কাজটি শুধুমাত্র group admin করতে পারবে।");
 
-  const resolved = await resolveTargets({ api, event, args });
-  let targets = resolved.map(r => r.uid);
+  const result = await resolveTargets({ api, event, args });
+
+  if (result.ambiguous) {
+    let text = `⚠️ "${result.query}" — eki rokom name er ekadhik jon paoa gechhe. Specific kore din:\n\n`;
+    result.candidates.forEach((c, i) => {
+      text += `${i + 1}. ${c.name || "(no name)"} — 🔢 ${c.uid}\n`;
+    });
+    text += `\nUID diye abar /kick chalan, eg:\n/kick ${result.candidates[0].uid}`;
+    return message.reply(text.trim());
+  }
+
+  let targets = result.targets.map(r => r.uid);
 
   if (targets.length === 0) {
+    if (result.error) return message.reply(`❌ Group info ana jaai ni: ${result.error}`);
+    if (result.query) return message.reply(`❌ "${result.query}" name er kau ke group e paini. Real @mention, reply, ba direct UID use korun.`);
     return message.reply("📌 ব্যবহার:\n• /kick @mention\n• /kick @name (group member er name)\n• Reply দিয়ে /kick\n• /kick <UID>");
   }
 
