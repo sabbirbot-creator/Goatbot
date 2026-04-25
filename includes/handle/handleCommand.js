@@ -9,9 +9,24 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
     const moment = require("moment-timezone");
 
     return async function ({ event }) {
-        const { threadID, messageID, senderID, body } = event;
+        const { threadID, messageID, senderID } = event;
+        let { body } = event;
         const { commands, cooldowns, eventRegistered } = global.client;
         const { PREFIX, ADMINBOT, DEVELOPER, adminOnly } = global.config;
+
+        // --- MENTION SUPPORT: if bot is mentioned at the start, treat as command call ---
+        try {
+            const botID = String(api.getCurrentUserID());
+            if (body && event.mentions && event.mentions[botID]) {
+                const mentionText = String(event.mentions[botID] || "").trim();
+                const escMention = mentionText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const stripped = body.replace(new RegExp(`^\\s*${escMention}\\s*`, "i"), "").trim();
+                if (stripped !== body) {
+                    if (stripped.startsWith(PREFIX)) body = stripped;
+                    else if (stripped.length > 0) body = PREFIX + stripped;
+                }
+            }
+        } catch (e) { /* ignore */ }
 
         if (!body || !body.startsWith(PREFIX)) return;
 

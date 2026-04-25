@@ -203,10 +203,28 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
                 */
                 let isUserCallCommand = false;
                 async function onStart() {
-                        if (!body || !body.startsWith(prefix))
+                        let cmdBody = body;
+                        // --- MENTION SUPPORT: if bot is mentioned at start, strip mention and use rest as command ---
+                        try {
+                                const botID = String(api.getCurrentUserID());
+                                if (cmdBody && event.mentions && event.mentions[botID]) {
+                                        const mentionText = String(event.mentions[botID] || "").trim();
+                                        const escMention = mentionText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                                        const stripped = cmdBody.replace(new RegExp(`^\\s*${escMention}\\s*`, "i"), "").trim();
+                                        if (stripped !== cmdBody) {
+                                                if (stripped.startsWith(prefix)) {
+                                                        cmdBody = stripped;
+                                                } else if (stripped.length > 0) {
+                                                        cmdBody = prefix + stripped;
+                                                }
+                                        }
+                                }
+                        } catch (e) { /* ignore */ }
+
+                        if (!cmdBody || !cmdBody.startsWith(prefix))
                                 return;
                         const dateNow = Date.now();
-                        const args = body.slice(prefix.length).trim().split(/ +/);
+                        const args = cmdBody.slice(prefix.length).trim().split(/ +/);
                         let commandName = args.shift().toLowerCase();
                         let command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
                         const aliasesData = threadData.data.aliases || {};
