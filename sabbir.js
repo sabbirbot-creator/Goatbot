@@ -17,8 +17,7 @@ const dirConfigCommands = path.normalize(`${__dirname}/configCommands.json`);
 const dirAccount = path.normalize(`${__dirname}/account.txt`);
 
 const config = require(dirConfig);
-//const configCommands = require(dirConfigCommands);
-
+const configCommands = {};
 // Map alternate field names used by original Goat-Bot-V2
 if (!config.adminBot) config.adminBot = config.adminID || [];
 if (!config.optionsFca) config.optionsFca = config.fcaOption || {};
