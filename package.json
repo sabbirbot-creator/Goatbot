@@ -1,7 +1,7 @@
 {
   "name": "sabbir-chat-bot",
   "version": "2.0.0",
-  "description": "Made By ARIFUL ISLAM",
+  "description": "Made By Ariful Islam Sabbir",
   "main": "Sabbir.js",
   "engines": {
     "node": "18.x"
@@ -10,7 +10,7 @@
     "start": "node Sabbir.js",
     "login": "node login"
   },
-  "author": "ARIFUL SABBIR",
+  "author": "Ariful Islam Sabbir",
   "license": "MIT",
   "dependencies": {
     "@distube/ytdl-core": "^4.13.2",

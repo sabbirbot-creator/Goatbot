@@ -1,12 +1,12 @@
 {
   "name": "sabbir-fca",
   "version": "1.1.0",
-  "description": "Facebook-chat-api",
+  "description": "Facebook Chat API - Made By Ariful Islam Sabbir",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
-  "author": "sabbir",
+  "author": "Ariful Islam Sabbir",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/KanzuXHorizon/Fca-Horizon-Remastered/issues"

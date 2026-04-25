@@ -17,7 +17,20 @@ const dirConfigCommands = path.normalize(`${__dirname}/configCommands.json`);
 const dirAccount = path.normalize(`${__dirname}/account.txt`);
 
 const config = require(dirConfig);
-const configCommands = {};
+let configCommands = {};
+try {
+        if (fs.existsSync(dirConfigCommands)) {
+                configCommands = require(dirConfigCommands);
+        }
+} catch (e) {
+        configCommands = {};
+}
+configCommands.envGlobal = configCommands.envGlobal || {};
+configCommands.envCommands = configCommands.envCommands || {};
+configCommands.envEvents = configCommands.envEvents || {};
+configCommands.commandUnload = configCommands.commandUnload || [];
+configCommands.commandEventUnload = configCommands.commandEventUnload || [];
+configCommands.commandBanned = configCommands.commandBanned || {};
 // Map alternate field names used by original Goat-Bot-V2
 if (!config.adminBot) config.adminBot = config.adminID || [];
 if (!config.optionsFca) config.optionsFca = config.fcaOption || {};
@@ -36,7 +49,7 @@ global.GoatBot = {
         onReaction: new Map(),
         onAnyEvent: [],
         config,
-        //configCommands,
+        configCommands,
         envCommands: {},
         envEvents: {},
         envGlobal: {},

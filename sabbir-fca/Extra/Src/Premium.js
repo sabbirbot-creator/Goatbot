@@ -20,7 +20,7 @@ module.exports = async function(SessionID) {
                 Database(true).set('PremiumKey', String(global.Fca.Require.FastConfig.PreKey));
                 Database(true).set('UserName', userName);
                 process.env.HalzionVersion = 1973
-                Text = "Bạn Đang Sài Phiên Bản: Premium Access";
+                Text = "You Are Currently Using Version: Premium Access";
             }
             catch (error) {
                 Text = "Lỗi Kết Nối";
@@ -31,7 +31,7 @@ module.exports = async function(SessionID) {
                 Database(true).set('PremiumKey', String(global.Fca.Require.FastConfig.PreKey));
                 Database(true).set('UserName', userName);
                 process.env.HalzionVersion = 1973
-                Text = "Bạn Đang Sài Phiên Bản: Premium Access";
+                Text = "You Are Currently Using Version: Premium Access";
             }
             catch (error) {
                 Text = "Lỗi Kết Nối";
@@ -43,7 +43,7 @@ module.exports = async function(SessionID) {
                 Database(true).set('PremiumKey', String(global.Fca.Require.FastConfig.PreKey));
                 Database(true).set('UserName', userName);
                 process.env.HalzionVersion = 1973
-                Text = "Bạn Đang Sài Phiên Bản: Premium Access";
+                Text = "You Are Currently Using Version: Premium Access";
             }
             catch (error) {
                 Text = "Lỗi Kết Nối";
@@ -55,7 +55,7 @@ module.exports = async function(SessionID) {
             Database(true).set('PremiumKey', String(global.Fca.Require.FastConfig.PreKey));
             Database(true).set('UserName', userName);
             process.env.HalzionVersion = 1973
-            Text = "Bạn Đang Sài Phiên Bản: Premium Access";
+            Text = "You Are Currently Using Version: Premium Access";
         }
         catch (error) {
             Text = "Lỗi Kết Nối";

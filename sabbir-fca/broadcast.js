@@ -1,7 +1,17 @@
 'use strict';
 
 const logger = require('./logger');
-const Fetch = require('got');
+const https = require('https');
+
+const Fetch = {
+  get: (url) => new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => resolve({ body }));
+    }).on('error', reject);
+  })
+};
 
 const broadcastConfig = {
   enabled: false,
@@ -21,7 +31,7 @@ const fetchBroadcastData = async () => {
 };
 
 const broadcastRandomMessage = () => {
-  const randomMessage = broadcastConfig.data.length > 0 ? broadcastConfig.data[Math.floor(Math.random() * broadcastConfig.data.length)] : 'Ae Zui Zẻ Nhé !';
+  const randomMessage = broadcastConfig.data.length > 0 ? broadcastConfig.data[Math.floor(Math.random() * broadcastConfig.data.length)] : 'Have Fun!';
   logger.Normal(randomMessage);
 };
 

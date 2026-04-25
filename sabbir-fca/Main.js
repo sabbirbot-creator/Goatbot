@@ -1376,7 +1376,7 @@ function login(loginData, options, callback) {
                                     secret: secret.base32,
                                     encoding: 'base32'
                                 })) {
-                                    logger.Warning("Mã Không Đúng vui lòng nhập lại(Incorrect code, please enter again.)")
+                                    logger.Warning("Incorrect code, please enter again.")
                                     ask();
                                 }
                                 else {

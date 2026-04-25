@@ -186,7 +186,7 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
     }
 
     if (process.env.OnStatus === undefined) {
-      global.Fca.Require.logger.Normal('Bạn Đang Sài Phiên Bản: Premium Access');
+      global.Fca.Require.logger.Normal('You Are Currently Using Version: Premium Access');
 
       if (Number(global.Fca.Require.FastConfig.AutoRestartMinutes) === 0) {
         // something
