@@ -44,6 +44,7 @@
     "helmet": "^7.0.0",
     "https-proxy-agent": "^4.0.0",
     "image-downloader": "^4.3.0",
+    "bluebird": "^3.7.2",
     "jimp": "^0.16.13",
     "jsonpath-plus": "^10.3.0",
     "lodash": "^4.17.21",
