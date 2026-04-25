@@ -65,7 +65,17 @@ module.exports.onStart = async function ({ api, event, args, message }) {
 
   if (targets.length === 0) {
     if (result.error) return message.reply(`❌ Group info ana jaai ni: ${result.error}`);
-    if (result.query) return message.reply(`❌ "${result.query}" name er kau ke group e paini. Real @mention, reply, ba direct UID use korun.`);
+    if (result.query) {
+      let msg = `❌ "${result.query}" name er kau ke group e paini.`;
+      if (result.available && result.available.length > 0) {
+        msg += `\n\n📋 Group e ${result.totalParticipants} jon ache. Kichu name (UID shoho):\n`;
+        result.available.forEach((c, i) => { msg += `${i + 1}. ${c.name} — 🔢 ${c.uid}\n`; });
+        msg += `\nTry koro: /kick <UID>`;
+      } else {
+        msg += ` Real @mention, reply, ba direct UID use korun.`;
+      }
+      return message.reply(msg.trim());
+    }
     return message.reply("📌 ব্যবহার:\n• /kick @mention\n• /kick @name (group member er name)\n• Reply দিয়ে /kick\n• /kick <UID>");
   }
 

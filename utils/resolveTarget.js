@@ -143,9 +143,38 @@ async function resolveTargets({ api, event, args, includeSelfFromMention = false
                 return { targets: [], ambiguous: false, error: e.message || String(e), query: nameQuery };
         }
 
-        const ranked = scoreParticipants(participants, nameQuery, exclude);
+        console.log(`[resolveTargets] query="${nameQuery}" | participants=${participants.length} | sample names: ${participants.slice(0, 5).map(p => `"${p.name || p.firstName || "(no-name)"}"`).join(", ")}`);
+
+        let ranked = scoreParticipants(participants, nameQuery, exclude);
+
+        // Fallback: super loose — any substring of any query word in any participant name (≥2 chars)
         if (ranked.length === 0) {
-                return { targets: [], ambiguous: false, query: nameQuery };
+                const nq = normalize(nameQuery.replace(/^@+/, ""));
+                const qwords = nq.split(" ").filter(w => w.length >= 2);
+                const loose = [];
+                const excSet = new Set(exclude.map(String));
+                for (const p of participants) {
+                        if (!p || !p.id || excSet.has(String(p.id))) continue;
+                        const pname = normalize(p.name || p.firstName || "");
+                        if (!pname) continue;
+                        let s = 0;
+                        for (const w of qwords) {
+                                if (pname.includes(w)) s += w.length;
+                                else if (w.includes(pname) && pname.length >= 3) s += pname.length;
+                        }
+                        if (s > 0) loose.push({ p, score: s, wordsHit: 1, totalWords: qwords.length });
+                }
+                loose.sort((a, b) => b.score - a.score);
+                ranked = loose;
+        }
+
+        if (ranked.length === 0) {
+                // Show available participant names so user can pick by UID
+                const sample = participants
+                        .filter(p => p && p.id && !exclude.includes(String(p.id)) && (p.name || p.firstName))
+                        .slice(0, 10)
+                        .map(p => ({ uid: String(p.id), name: p.name || p.firstName }));
+                return { targets: [], ambiguous: false, query: nameQuery, available: sample, totalParticipants: participants.length };
         }
 
         const top = ranked[0];

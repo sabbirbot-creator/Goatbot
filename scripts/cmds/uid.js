@@ -31,7 +31,15 @@ module.exports.onStart = async function ({ api, message, event, args }) {
 
   if (result.targets.length === 0) {
     if (result.error) return message.reply(`❌ Group info ana jaai ni: ${result.error}`);
-    return message.reply(`❌ "${result.query || (args || []).join(" ")}" name er kau ke ei group e paini.\n\nTry koro:\n• Real @mention diye\n• Reply diye\n• Direct UID diye (5+ digit number)`);
+    let msg = `❌ "${result.query || (args || []).join(" ")}" name er kau ke ei group e paini.`;
+    if (result.available && result.available.length > 0) {
+      msg += `\n\n📋 Group e ${result.totalParticipants} jon ache. Kichu name (UID shoho):\n`;
+      result.available.forEach((c, i) => { msg += `${i + 1}. ${c.name} — 🔢 ${c.uid}\n`; });
+      msg += `\nTry koro: /uid <UID>`;
+    } else {
+      msg += `\n\nTry koro:\n• Real @mention diye\n• Reply diye\n• Direct UID diye`;
+    }
+    return message.reply(msg.trim());
   }
 
   if (result.targets.length === 1 && result.targets[0].source === "reply") {
