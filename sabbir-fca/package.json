@@ -9,12 +9,12 @@
   "author": "Ariful Islam Sabbir",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/KanzuXHorizon/Fca-Horizon-Remastered/issues"
+    "url": ""
   },
-  "homepage": "https://github.com/KanzuXHorizon/Fca-Horizon-Remastered#readme",
+  "homepage": "",
   "repository": {
     "type": "git",
-    "url": "git://github.com/KanzuXHorizon/Fca-Horizon-Remastered.git"
+    "url": ""
   },
   "dependencies": {
     "aes-js": "latest",
@@ -52,7 +52,7 @@
     "ws": "^8.13.0"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": ">=20.x"
   },
   "devDependencies": {
     "eslint": "^8.40.0",
@@ -86,9 +86,9 @@
     }
   },
   "keywords": [
-    "Fca horizon",
-    "fca-horizon-remastered",
-    "horizon fca",
-    "horizon"
+    "Sabbir-fca",
+    "",
+    "",
+    "sabbir"
   ]
 }
