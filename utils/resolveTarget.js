@@ -70,22 +70,53 @@ function scoreParticipants(participants, query, excludeIDs) {
         return scored;
 }
 
+function isGenericName(n) {
+        if (!n) return true;
+        const s = String(n).trim().toLowerCase();
+        if (!s) return true;
+        // Common generic placeholder names FB returns when name is hidden
+        return s === "facebook user"
+                || s === "facebook ইউজার"
+                || s.includes("facebook user")
+                || s.includes("facebook ইউজার")
+                || s === "messenger user"
+                || s === "user";
+}
+
 async function enrichParticipants(api, threadInfo) {
         const participants = (threadInfo.userInfo || []).slice();
         const allIDs = threadInfo.participantIDs || participants.map(p => p.id);
-        const haveNames = new Set(participants.filter(p => p && (p.name || p.firstName)).map(p => String(p.id)));
-        const missingIDs = (allIDs || []).map(String).filter(id => !haveNames.has(id));
 
-        if (missingIDs.length === 0) return participants;
+        // Treat both missing AND generic names as missing
+        const haveRealNames = new Set(
+                participants
+                        .filter(p => p && (p.name || p.firstName) && !isGenericName(p.name || p.firstName))
+                        .map(p => String(p.id))
+        );
+        const needIDs = (allIDs || []).map(String).filter(id => !haveRealNames.has(id));
+
+        if (needIDs.length === 0) return participants;
 
         try {
                 const fetched = await new Promise((resolve, reject) => {
-                        api.getUserInfo(missingIDs.slice(0, 100), (err, info) => err ? reject(err) : resolve(info || {}));
+                        api.getUserInfo(needIDs.slice(0, 100), (err, info) => err ? reject(err) : resolve(info || {}));
                 });
+                // Update existing entries OR add new ones with real names
+                const byId = new Map(participants.map(p => [String(p.id), p]));
                 for (const id of Object.keys(fetched)) {
                         const u = fetched[id];
-                        if (u && (u.name || u.firstName)) {
-                                participants.push({ id, name: u.name || u.firstName });
+                        if (!u) continue;
+                        const newName = u.name || u.firstName;
+                        if (!newName) continue;
+                        const existing = byId.get(String(id));
+                        if (existing) {
+                                // Replace generic placeholder with real name if available
+                                if (isGenericName(existing.name) && !isGenericName(newName)) {
+                                        existing.name = newName;
+                                }
+                                if (!existing.firstName && u.firstName) existing.firstName = u.firstName;
+                        } else {
+                                participants.push({ id: String(id), name: newName, firstName: u.firstName });
                         }
                 }
         } catch (e) { /* ignore */ }
@@ -169,11 +200,14 @@ async function resolveTargets({ api, event, args, includeSelfFromMention = false
         }
 
         if (ranked.length === 0) {
-                // Show available participant names so user can pick by UID
+                // Show ALL available participants (including generic-name ones) so user can pick by UID
                 const sample = participants
-                        .filter(p => p && p.id && !exclude.includes(String(p.id)) && (p.name || p.firstName))
-                        .slice(0, 10)
-                        .map(p => ({ uid: String(p.id), name: p.name || p.firstName }));
+                        .filter(p => p && p.id && !exclude.includes(String(p.id)))
+                        .slice(0, 15)
+                        .map(p => ({
+                                uid: String(p.id),
+                                name: p.name || p.firstName || "(no name visible to bot)"
+                        }));
                 return { targets: [], ambiguous: false, query: nameQuery, available: sample, totalParticipants: participants.length };
         }
 
