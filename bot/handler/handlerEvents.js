@@ -1,165 +1,75 @@
-const fs = require("fs-extra");
+module.exports = function ({ api, models, Users, Threads, Currencies }) {
+    const logger = require("../../utils/log.js");
 
-const nullAndUndefined = [undefined, null];
+    return function ({ event }) {
 
-function getType(obj) {
-    return Object.prototype.toString.call(obj).slice(8, -1);
-}
+        // 🔥 SAFE FILTER (IMPORTANT)
+        if (!event || !event.threadID || !event.senderID) return;
+        if (event.type && event.type !== "message" && event.type !== "message_reply") return;
 
-function getRole(threadData, senderID) {
-    const adminBot = global.GoatBot?.config?.adminBot || [];
-    if (!senderID) return 0;
+        const { allowInbox } = global.config;
+        const { userBanned, threadBanned } = global.data;
+        const { commands, eventRegistered } = global.client;
 
-    const adminBox = threadData?.adminIDs || [];
-    return adminBot.includes(senderID) ? 2 : adminBox.includes(senderID) ? 1 : 0;
-}
+        let senderID = String(event.senderID);
+        let threadID = String(event.threadID);
 
-function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, commandName, message, lang) {
-    const config = global.GoatBot.config;
-    const { adminBot, hideNotiMessage } = config;
+        if (
+            userBanned.has(senderID) ||
+            threadBanned.has(threadID) ||
+            (allowInbox == false && senderID == threadID)
+        ) return;
 
-    const userBan = userData?.banned || {};
-    if (userBan.status) return true;
+        for (const eventReg of eventRegistered) {
 
-    const adminOnly = config.adminOnly || {};
-    if (adminOnly.enable && !adminBot.includes(senderID)) {
-        return true;
-    }
+            const cmd = commands.get(eventReg);
+            if (!cmd) continue;
 
-    if (isGroup) {
-        const threadBan = threadData?.banned || {};
-        if (threadBan.status) return true;
-    }
+            let getText2;
 
-    return false;
-}
+            if (cmd.languages && typeof cmd.languages == "object") {
+                getText2 = (...values) => {
 
-module.exports = function (api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData) {
-    return async function (event, message) {
+                    const langPack = cmd.languages || {};
 
-        const { utils, GoatBot } = global;
-        const { getPrefix } = utils;
+                    if (!langPack.hasOwnProperty(global.config.language))
+                        return api.sendMessage(
+                            global.getText('handleCommand', 'notFoundLanguage', cmd.config.name),
+                            threadID
+                        );
 
-        const { body, messageID, threadID, isGroup } = event;
+                    let lang = cmd.languages[global.config.language][values[0]] || "";
 
-        if (!threadID) return;
+                    for (let i = values.length - 1; i >= 0; i--) {
+                        const expReg = new RegExp("%" + (i + 1), "g");
+                        lang = lang.replace(expReg, values[i]);
+                    }
 
-        const senderID = event.userID || event.senderID || event.author;
-
-        // =============================
-        // SAFE THREAD INIT (FIXED)
-        // =============================
-        let threadData = global.db.allThreadData?.find(t => t.threadID == threadID);
-        let userData = global.db.allUserData?.find(u => u.userID == senderID);
-
-        if (!global.db.receivedTheFirstMessage)
-            global.db.receivedTheFirstMessage = {};
-
-        if (!userData && senderID && !isNaN(senderID)) {
-            userData = await usersData.create(senderID);
-        }
-
-        if (!threadData && threadID && !isNaN(threadID)) {
-            threadData = await threadsData.create(threadID);
-        }
-
-        const prefix = getPrefix(threadID);
-        const role = getRole(threadData, senderID);
-
-        const parameters = {
-            api, usersData, threadsData, message, event,
-            prefix, role
-        };
-
-        const langCode = threadData?.data?.lang || "en";
-
-        // =============================
-        // COMMAND HANDLER
-        // =============================
-        async function onStart() {
-            let cmdBody = body;
-
-            if (!cmdBody || !cmdBody.startsWith(prefix)) return;
-
-            const args = cmdBody.slice(prefix.length).trim().split(/ +/);
-            let commandName = args.shift().toLowerCase();
-
-            let command =
-                GoatBot.commands.get(commandName) ||
-                GoatBot.commands.get(GoatBot.aliases.get(commandName));
-
-            if (!command) return;
-
-            commandName = command.config.name;
-
-            if (isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, commandName, message, langCode))
-                return;
+                    return lang;
+                };
+            } else {
+                getText2 = () => {};
+            }
 
             try {
-                await command.onStart({
-                    ...parameters,
-                    args,
-                    commandName
-                });
-            } catch (e) {
-                console.log(e);
+                const Obj = {
+                    event,
+                    api,
+                    models,
+                    Users,
+                    Threads,
+                    Currencies,
+                    getText: getText2
+                };
+
+                cmd.handleEvent(Obj);
+
+            } catch (error) {
+                logger(
+                    global.getText('handleCommandEvent', 'moduleError', cmd.config.name),
+                    'error'
+                );
             }
         }
-
-        // =============================
-        // ON CHAT
-        // =============================
-        async function onChat() {
-            const allOnChat = GoatBot.onChat || [];
-
-            const args = body ? body.split(/ +/) : [];
-
-            for (const key of allOnChat) {
-                const command = GoatBot.commands.get(key);
-                if (!command) continue;
-
-                try {
-                    await command.onChat({
-                        ...parameters,
-                        args
-                    });
-                } catch (e) {
-                    console.log(e);
-                }
-            }
-        }
-
-        // =============================
-        // ON EVENT
-        // =============================
-        async function onEvent() {
-            const allOnEvent = GoatBot.onEvent || [];
-
-            for (const key of allOnEvent) {
-                const command = GoatBot.commands.get(key);
-                if (!command) continue;
-
-                try {
-                    await command.onEvent({
-                        ...parameters
-                    });
-                } catch (e) {
-                    console.log(e);
-                }
-            }
-        }
-
-        // =============================
-        // EXECUTION FLOW (IMPORTANT)
-        // =============================
-        await onStart();
-        await onChat();
-        await onEvent();
-
-        return {
-            onStart,
-            onChat,
-            onEvent
-        };
     };
 };
