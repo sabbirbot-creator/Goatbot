@@ -24,16 +24,15 @@ function extractMentionIDs(mentions, excludeIDs) {
         return [];
 }
 
-// Strict name matching: requires that EVERY word in the query is present
-// in the participant's name (as a whole word, a prefix, or a substring).
-// Returns ranked candidates. Caller decides what to do with ambiguity.
-function findByName(participants, query, excludeIDs) {
+// Score-based matching. Returns ranked candidates with score.
+// Higher score = better match.
+function scoreParticipants(participants, query, excludeIDs) {
         if (!query || !participants || !participants.length) return [];
         const exclude = new Set((excludeIDs || []).map(String));
         const nq = normalize(query.replace(/^@+/, ""));
         if (!nq) return [];
-        const words = nq.split(" ").filter(Boolean);
-        if (words.length === 0) return [];
+        const qwords = nq.split(" ").filter(Boolean);
+        if (qwords.length === 0) return [];
 
         const scored = [];
         for (const p of participants) {
@@ -42,33 +41,56 @@ function findByName(participants, query, excludeIDs) {
                 if (!pname) continue;
                 const pwords = pname.split(" ").filter(Boolean);
 
-                // Exact full-name match — top priority
-                if (pname === nq) { scored.push({ p, score: 10000, allMatched: true }); continue; }
+                let score = 0;
+                let wordsHit = 0;
 
-                // Full phrase substring match
-                if (pname.includes(nq) || nq.includes(pname)) {
-                        scored.push({ p, score: 5000 + Math.min(nq.length, pname.length), allMatched: true });
-                        continue;
-                }
-
-                // Per-word strict matching: every query word must hit
-                let total = 0;
-                let allMatched = true;
-                for (const w of words) {
-                        let best = 0;
-                        for (const pw of pwords) {
-                                if (pw === w) { best = Math.max(best, 10); }
-                                else if (pw.startsWith(w) || w.startsWith(pw)) { best = Math.max(best, 6); }
-                                else if (pw.includes(w) || w.includes(pw)) { best = Math.max(best, 3); }
+                if (pname === nq) { score = 100000; wordsHit = qwords.length; }
+                else if (pname.includes(nq)) { score = 50000 + nq.length * 10; wordsHit = qwords.length; }
+                else if (nq.includes(pname) && pname.length >= 3) { score = 30000 + pname.length * 10; wordsHit = qwords.length; }
+                else {
+                        for (const w of qwords) {
+                                if (!w || w.length < 2) continue;
+                                let best = 0;
+                                for (const pw of pwords) {
+                                        if (pw === w) best = Math.max(best, 100);
+                                        else if (pw.startsWith(w) && w.length >= 3) best = Math.max(best, 60);
+                                        else if (w.startsWith(pw) && pw.length >= 3) best = Math.max(best, 50);
+                                        else if (pw.includes(w) && w.length >= 3) best = Math.max(best, 30);
+                                        else if (w.includes(pw) && pw.length >= 3) best = Math.max(best, 20);
+                                }
+                                if (best > 0) wordsHit++;
+                                score += best;
                         }
-                        if (best === 0) { allMatched = false; break; }
-                        total += best;
                 }
-                if (allMatched) scored.push({ p, score: total, allMatched: true });
+
+                if (score > 0) scored.push({ p, score, wordsHit, totalWords: qwords.length });
         }
 
         scored.sort((a, b) => b.score - a.score);
         return scored;
+}
+
+async function enrichParticipants(api, threadInfo) {
+        const participants = (threadInfo.userInfo || []).slice();
+        const allIDs = threadInfo.participantIDs || participants.map(p => p.id);
+        const haveNames = new Set(participants.filter(p => p && (p.name || p.firstName)).map(p => String(p.id)));
+        const missingIDs = (allIDs || []).map(String).filter(id => !haveNames.has(id));
+
+        if (missingIDs.length === 0) return participants;
+
+        try {
+                const fetched = await new Promise((resolve, reject) => {
+                        api.getUserInfo(missingIDs.slice(0, 100), (err, info) => err ? reject(err) : resolve(info || {}));
+                });
+                for (const id of Object.keys(fetched)) {
+                        const u = fetched[id];
+                        if (u && (u.name || u.firstName)) {
+                                participants.push({ id, name: u.name || u.firstName });
+                        }
+                }
+        } catch (e) { /* ignore */ }
+
+        return participants;
 }
 
 async function resolveTargets({ api, event, args, includeSelfFromMention = false, includeBot = false }) {
@@ -99,7 +121,7 @@ async function resolveTargets({ api, event, args, includeSelfFromMention = false
                 };
         }
 
-        // 3) Numeric UID args (only those that look like FB IDs: 5+ digits)
+        // 3) Numeric UID args
         const uidArgs = (args || []).filter(a => /^\d{5,}$/.test(String(a)));
         if (uidArgs.length > 0) {
                 return {
@@ -108,45 +130,53 @@ async function resolveTargets({ api, event, args, includeSelfFromMention = false
                 };
         }
 
-        // 4) Name search across thread participants (strict: all words must hit)
+        // 4) Name search across thread participants
         const rawArgs = (args && args.length) ? args : ((body || "").trim().split(/\s+/).slice(1));
         const nameQuery = rawArgs.join(" ").trim();
-        if (nameQuery) {
-                try {
-                        const info = await api.getThreadInfo(threadID);
-                        const participants = info.userInfo || [];
-                        const ranked = findByName(participants, nameQuery, exclude);
-                        if (ranked.length === 0) {
-                                return { targets: [], ambiguous: false, query: nameQuery };
-                        }
-                        const top = ranked[0];
-                        // Ambiguous if 2+ candidates tied at top score
-                        const tied = ranked.filter(r => r.score === top.score);
-                        if (tied.length > 1) {
-                                return {
-                                        targets: [],
-                                        ambiguous: true,
-                                        query: nameQuery,
-                                        candidates: tied.slice(0, 5).map(t => ({
-                                                uid: String(t.p.id),
-                                                name: t.p.name || null
-                                        }))
-                                };
-                        }
-                        return {
-                                targets: [{
-                                        uid: String(top.p.id),
-                                        name: top.p.name || null,
-                                        source: "name"
-                                }],
-                                ambiguous: false
-                        };
-                } catch (e) {
-                        return { targets: [], ambiguous: false, error: e.message || String(e) };
-                }
+        if (!nameQuery) return { targets: [], ambiguous: false };
+
+        let participants;
+        try {
+                const info = await api.getThreadInfo(threadID);
+                participants = await enrichParticipants(api, info);
+        } catch (e) {
+                return { targets: [], ambiguous: false, error: e.message || String(e), query: nameQuery };
         }
 
-        return { targets: [], ambiguous: false };
+        const ranked = scoreParticipants(participants, nameQuery, exclude);
+        if (ranked.length === 0) {
+                return { targets: [], ambiguous: false, query: nameQuery };
+        }
+
+        const top = ranked[0];
+
+        // Strong match: top score is much higher than 2nd, OR top has all-word hit, OR top score >= 100 (single exact word)
+        const second = ranked[1];
+        const dominant = !second || top.score >= second.score * 1.6 || (top.wordsHit === top.totalWords && top.score >= 100);
+
+        if (dominant && top.score >= 30) {
+                return {
+                        targets: [{
+                                uid: String(top.p.id),
+                                name: top.p.name || null,
+                                source: "name"
+                        }],
+                        ambiguous: false
+                };
+        }
+
+        // Otherwise treat as ambiguous — show top candidates so user can pick by UID
+        const tied = ranked.filter(r => r.score >= top.score * 0.6).slice(0, 5);
+        return {
+                targets: [],
+                ambiguous: true,
+                query: nameQuery,
+                candidates: tied.map(t => ({
+                        uid: String(t.p.id),
+                        name: t.p.name || null,
+                        score: t.score
+                }))
+        };
 }
 
-module.exports = { resolveTargets, extractMentionIDs, findByName, normalize };
+module.exports = { resolveTargets, extractMentionIDs, scoreParticipants, normalize };
