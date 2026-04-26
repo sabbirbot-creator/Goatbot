@@ -1,18 +1,18 @@
 const fs = require("fs");
 const path = require("path");
 
-const STATE_DIR = path.join(__dirname, "..", "..", "data");
-const STATE_FILE = path.join(STATE_DIR, "autoseen.json");
+const SABBIR_DIR = path.join(__dirname, "..", "..", "data");
+const SABBIR_FILE = path.join(SABBIR_DIR, "autoseen.json");
 
 function ensureDir() {
-  try { if (!fs.existsSync(STATE_DIR)) fs.mkdirSync(STATE_DIR, { recursive: true }); } catch (_) {}
+  try { if (!fs.existsSync(SABBIR_DIR)) fs.mkdirSync(SABBIR_DIR, { recursive: true }); } catch (_) {}
 }
 
 function loadState() {
   ensureDir();
   try {
-    if (!fs.existsSync(STATE_FILE)) return { enabled: true };
-    const raw = fs.readFileSync(STATE_FILE, "utf8");
+    if (!fs.existsSync(SABBIR_FILE)) return { enabled: true };
+    const raw = fs.readFileSync(SABBIR_FILE, "utf8");
     const data = JSON.parse(raw);
     return { enabled: data.enabled !== false };
   } catch (_) {
@@ -22,7 +22,7 @@ function loadState() {
 
 function saveState(state) {
   ensureDir();
-  try { fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2)); } catch (_) {}
+  try { fs.writeFileSync(SABBIR_FILE, JSON.stringify(state, null, 2)); } catch (_) {}
 }
 
 let state = loadState();
