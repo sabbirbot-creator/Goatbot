@@ -42,4 +42,23 @@ These were installed via Replit's package manager:
 
 ## Bot is not connecting to Facebook
 
-That is expected on a fresh import — the saved cookies are stale. To re-enable the bot, replace the contents of `account.txt` with a fresh appstate exported from a logged-in Facebook session, then restart the workflow. The wrapper will pick it up on the next restart cycle.
+The keep-alive web server on port 5000 always stays up. The Messenger listener inside `sabbir-fca` will exit with `Appstate - Cookie Của Bạn Đã Bị Lỗi` until two things are both true:
+
+1. `account.txt` contains fresh, non-revoked cookies for a logged-in Facebook session.
+2. Facebook's HTML response for that session embeds a usable `fb_dtsg` token.
+
+### Known upstream issue: empty `fb_dtsg` in HTML
+
+As of 2026-04, Facebook ships `["DTSGInitData",[],{"token":"","async_get_token":""}]` in the initial HTML of every surface we tested (www / mbasic / m / web / business.facebook.com / messenger / accountscenter). The real token is now fetched async from inside the page's JavaScript runtime, which `request`-style scrapers cannot execute. The login chain in `sabbir-fca/Main.js` includes:
+
+- A diagnostic block (`[FCA-DIAG]`) that prints the raw `DTSGInitData` snippet, any `name="fb_dtsg" value="..."` input, and `async_get_token` length so the failure mode is visible.
+- A multi-URL probe (`[FCA-PROBE]`) that, when the homepage token is empty, tries 9 alternate Facebook surfaces with the FCA-authenticated cookie jar/headers to look for any URL that still embeds a real token.
+- A regex fallback that, if everything above fails, accepts the LSD token (~27 chars) as `fb_dtsg`. Facebook rejects this for `getSeqId` and the FCA logs `ErrAppState`.
+
+If a future Facebook change makes the token visible again on any single URL, the multi-URL probe will pick it up automatically — no further code changes needed.
+
+If the empty-token behavior persists for the account in `account.txt`, the only realistic paths forward are:
+- Run a real browser (Puppeteer / Playwright + headless Chromium) for the login step to execute the JS that fetches the token.
+- Switch to Facebook's official Graph API with a Page Access Token (only works for Page-scoped messaging, not personal accounts).
+
+These are larger architectural changes, not a quick patch.

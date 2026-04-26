@@ -1249,10 +1249,68 @@ try {
                 //         if (redirect && redirect[1]) return utils.get(redirect[1], jar, null, globalOptions).then(utils.saveCookies(jar));
                 //     return res;
                 // })
-                .then(function(res){
-                    var html = res.body,Obj = buildAPI(globalOptions, html, jar,bypass_region_err);
-                        ctx = Obj.ctx;
-                        api = Obj.api;
+                .then(async function(res){
+                    var html = res.body;
+                    // Diagnostic: capture what DTSGInitData actually looks like in the response
+                    try {
+                        var dtsgSnippet = (html.match(/DTSGInitData[^\n]{0,200}/) || [])[0];
+                        console.log("[FCA-DIAG] DTSGInitData snippet: " + (dtsgSnippet ? dtsgSnippet.slice(0, 180) : 'NOT FOUND'));
+                        var dtsgInputSnippet = (html.match(/name="fb_dtsg"[^>]{0,120}/) || [])[0];
+                        console.log("[FCA-DIAG] fb_dtsg input snippet: " + (dtsgInputSnippet || 'NOT FOUND'));
+                        var asyncTok = (html.match(/"async_get_token":"([^"]*)"/) || [])[1];
+                        console.log("[FCA-DIAG] async_get_token: " + (asyncTok !== undefined ? '"' + asyncTok + '" (len=' + asyncTok.length + ')' : 'NOT FOUND'));
+                    } catch (eDiag) { console.log("[FCA-DIAG] err: " + eDiag.message); }
+                    // Modern www.facebook.com ships DTSGInitData with an empty token (the real
+                    // value is fetched async by client JS). When that happens, probe a list of
+                    // alternate FB surfaces that historically still embed a real fb_dtsg in the
+                    // initial HTML — using the FCA-authenticated jar/headers, not naked HTTPS.
+                    var hasUsableDtsg = /\["DTSGInitData",\[\],\{"token":"[^"]{20,}"/.test(html);
+                    if (!hasUsableDtsg) {
+                        var probeUrls = [
+                            'https://mbasic.facebook.com/profile.php',
+                            'https://mbasic.facebook.com/home.php',
+                            'https://mbasic.facebook.com/messages',
+                            'https://m.facebook.com/profile.php',
+                            'https://m.facebook.com/messages',
+                            'https://web.facebook.com/',
+                            'https://business.facebook.com/business_locations',
+                            'https://www.messenger.com/',
+                            'https://accountscenter.facebook.com/'
+                        ];
+                        var foundTok = null, foundFrom = null;
+                        for (var pi = 0; pi < probeUrls.length && !foundTok; pi++) {
+                            var pu = probeUrls[pi];
+                            try {
+                                var pres = await utils
+                                    .get(pu, jar, null, globalOptions, { noRef: true })
+                                    .then(utils.saveCookies(jar));
+                                var pbody = (pres && pres.body) || '';
+                                var pstatus = pres && pres.statusCode;
+                                var t1 = (pbody.match(/name="fb_dtsg"\s+value="([^"]+)"/) || [])[1];
+                                var t2 = (pbody.match(/\["DTSGInitData",\[\],\{"token":"([^"]{20,})"/) || [])[1];
+                                var t3 = (pbody.match(/"DTSGInitialData"[^}]{0,200}"token":"([^"]{20,})"/) || [])[1];
+                                var t4 = (pbody.match(/"async_get_token":"([^"]{20,})"/) || [])[1];
+                                var cand = t1 || t2 || t3 || t4;
+                                console.log("[FCA-PROBE] " + pu + " status=" + pstatus + " len=" + pbody.length +
+                                    " input=" + (t1 ? t1.length : '-') +
+                                    " init=" + (t2 ? t2.length : '-') +
+                                    " initial=" + (t3 ? t3.length : '-') +
+                                    " async=" + (t4 ? t4.length : '-'));
+                                if (cand) { foundTok = cand; foundFrom = pu; }
+                            } catch (ePr) {
+                                console.log("[FCA-PROBE] " + pu + " ERR " + (ePr && ePr.message));
+                            }
+                        }
+                        if (foundTok) {
+                            console.log("[FCA-DEBUG] fb_dtsg recovered via " + foundFrom + " (len=" + foundTok.length + ")");
+                            html = '["DTSGInitData",[],{"token":"' + foundTok + '","async_get_token":""}],' + html;
+                        } else {
+                            console.log("[FCA-DEBUG] No probe URL exposed an fb_dtsg. Chat APIs will likely 401.");
+                        }
+                    }
+                    var Obj = buildAPI(globalOptions, html, jar, bypass_region_err);
+                    ctx = Obj.ctx;
+                    api = Obj.api;
                     return res;
                 });
             if (globalOptions.pageID) {
