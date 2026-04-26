@@ -1,3 +1,4 @@
+const SABBIR = "Ariful Islam Sabbir";
 const { getName } = require("../../utils/getName.js");
 const { resolveTargets } = require("../../utils/resolveTarget.js");
 const activityTracker = require("../../utils/activityTracker.js");

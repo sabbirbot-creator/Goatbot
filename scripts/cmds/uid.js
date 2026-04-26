@@ -1,3 +1,4 @@
+const SABBIR = "Ariful Islam Sabbir";
 const { resolveTargets } = require("../../utils/resolveTarget.js");
 
 module.exports.config = {

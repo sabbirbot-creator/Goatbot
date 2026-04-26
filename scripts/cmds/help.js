@@ -1,44 +1,47 @@
-const { animateSendLines, animateEditLines, sleep } = require("../../utils/animation.js");
+const SABBIR = "Ariful Islam Sabbir";
 
 module.exports.config = {
   name: "help",
-  version: "3.0.0",
+  version: "4.0.0",
   hasPermssion: 0,
-  credits: "Ariful Islam Sabbir",
-  description: "সব command এর লিস্ট দেখাও — Next/Prev reaction সহ animation",
+  credits: SABBIR,
+  description: "সব command এর লিস্ট দেখাও — Next/Prev reaction সহ pagination",
   usePrefix: true,
   category: "Info",
   usages: "help [page | command name]",
   cooldowns: 5
 };
 
-const PER_PAGE = 8;
-const NEXT_EMOJI = "➡";
-const PREV_EMOJI = "⬅";
+const SABBIR_PER_PAGE = 10;
+const SABBIR_NEXT_EMOJI = "➡";
+const SABBIR_PREV_EMOJI = "⬅";
 
-function buildLines(cmdList, page, totalPages, prefix) {
-  const start = (page - 1) * PER_PAGE;
-  const slice = cmdList.slice(start, start + PER_PAGE);
+function buildPage(cmdList, page, totalPages, prefix) {
+  const start = (page - 1) * SABBIR_PER_PAGE;
+  const slice = cmdList.slice(start, start + SABBIR_PER_PAGE);
 
   const lines = [];
   lines.push("╔══✨ SABBiR CHAT BOT ✨══╗");
-  lines.push(`👑 Owner: Ariful Islam Sabbir`);
+  lines.push(`👑 Owner: ${SABBIR}`);
   lines.push(`📄 Page ${page} / ${totalPages}  •  📦 Total ${cmdList.length}`);
   lines.push("──────────────────────");
-  for (const name of slice) {
-    lines.push(`  ➤ ${prefix}${name}`);
+  for (let i = 0; i < slice.length; i++) {
+    lines.push(`  ${start + i + 1}. ${prefix}${slice[i]}`);
   }
   lines.push("──────────────────────");
+
   const navParts = [];
-  if (page > 1) navParts.push(`${PREV_EMOJI} Prev`);
-  if (page < totalPages) navParts.push(`${NEXT_EMOJI} Next`);
+  if (page > 1) navParts.push(`${SABBIR_PREV_EMOJI} Prev`);
+  if (page < totalPages) navParts.push(`${SABBIR_NEXT_EMOJI} Next`);
   if (navParts.length > 0) {
-    lines.push(`📌 React: ${navParts.join("   ")}`);
+    lines.push(`📌 React below: ${navParts.join("   ")}`);
+  } else {
+    lines.push(`📌 শেষ page এ আছেন`);
   }
   lines.push(`💡 ${prefix}help <command> — বিস্তারিত`);
   lines.push("╚══════════════════════╝");
 
-  return lines;
+  return lines.join("\n");
 }
 
 function getCmdList() {
@@ -54,31 +57,43 @@ function getCmdList() {
 }
 
 async function setNavReactions(api, messageID) {
-  try { await api.setMessageReaction(PREV_EMOJI, messageID, () => {}, true); } catch (_) {}
-  await sleep(150);
-  try { await api.setMessageReaction(NEXT_EMOJI, messageID, () => {}, true); } catch (_) {}
+  try { await api.setMessageReaction(SABBIR_PREV_EMOJI, messageID, () => {}, true); } catch (_) {}
+  await new Promise(r => setTimeout(r, 200));
+  try { await api.setMessageReaction(SABBIR_NEXT_EMOJI, messageID, () => {}, true); } catch (_) {}
+}
+
+function sendOnce(api, threadID, body, replyToMessageID) {
+  return new Promise((resolve, reject) => {
+    const cb = (err, info) => err ? reject(err) : resolve(info);
+    if (replyToMessageID) {
+      api.sendMessage({ body }, threadID, cb, replyToMessageID);
+    } else {
+      api.sendMessage({ body }, threadID, cb);
+    }
+  });
+}
+
+async function editOnce(api, messageID, body) {
+  if (typeof api.editMessage !== "function") return false;
+  try {
+    await api.editMessage(messageID, body);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 module.exports.onStart = async function ({ api, event, message, args }) {
   const prefix = (global.GoatBot && global.GoatBot.config && global.GoatBot.config.prefix) || "/";
   const cmdList = getCmdList();
-  const totalPages = Math.max(1, Math.ceil(cmdList.length / PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(cmdList.length / SABBIR_PER_PAGE));
 
   if (args[0]) {
     const pageNum = parseInt(args[0]);
     if (!isNaN(pageNum)) {
       const page = Math.max(1, Math.min(pageNum, totalPages));
-      const lines = buildLines(cmdList, page, totalPages, prefix);
-
-      const sent = await animateSendLines(api, event.threadID, lines, {
-        initialBody: "✨ Loading help menu...",
-        perLineMs: 180,
-        replyToMessageID: event.messageID,
-        isGroup: !!event.isGroup,
-        showTyping: true,
-        typingMs: 1000
-      });
-
+      const body = buildPage(cmdList, page, totalPages, prefix);
+      const sent = await sendOnce(api, event.threadID, body, event.messageID).catch(() => null);
       if (sent && sent.messageID && totalPages > 1) {
         global.GoatBot.onReaction.set(sent.messageID, {
           commandName: "help",
@@ -101,36 +116,22 @@ module.exports.onStart = async function ({ api, event, message, args }) {
       );
     }
     const c = cmd.config;
-    const detailLines = [
+    const detail = [
       `╔══✨ COMMAND INFO ✨══╗`,
       `📌 Command: ${prefix}${c.name}`,
-      `📝 বিবরণ: ${c.description || "নেই"}`,
+      `📝 বিবরণ: ${c.description || c.shortDescription || "নেই"}`,
       `🔧 ব্যবহার: ${prefix}${c.usages || c.name}`,
       `📂 Category: ${c.category || "General"}`,
       `⏱ Cooldown: ${c.cooldowns || c.countDown || 0}s`,
-      `👑 Credits: ${c.credits || "—"}`,
+      `👑 Credits: ${c.credits || SABBIR}`,
       `╚══════════════════════╝`
-    ];
-    await animateSendLines(api, event.threadID, detailLines, {
-      initialBody: "✨ Loading...",
-      perLineMs: 180,
-      replyToMessageID: event.messageID,
-      isGroup: !!event.isGroup,
-      showTyping: true,
-      typingMs: 800
-    });
+    ].join("\n");
+    await sendOnce(api, event.threadID, detail, event.messageID).catch(() => null);
     return;
   }
 
-  const lines = buildLines(cmdList, 1, totalPages, prefix);
-  const sent = await animateSendLines(api, event.threadID, lines, {
-    initialBody: "✨ Loading help menu...",
-    perLineMs: 180,
-    replyToMessageID: event.messageID,
-    isGroup: !!event.isGroup,
-    showTyping: true,
-    typingMs: 1000
-  });
+  const body = buildPage(cmdList, 1, totalPages, prefix);
+  const sent = await sendOnce(api, event.threadID, body, event.messageID).catch(() => null);
 
   if (sent && sent.messageID && totalPages > 1) {
     global.GoatBot.onReaction.set(sent.messageID, {
@@ -153,25 +154,27 @@ module.exports.onReaction = async function ({ api, event, Reaction }) {
   const { currentPage, cmdList, totalPages, prefix } = Reaction;
 
   let nextPage = currentPage;
-  if (reaction === NEXT_EMOJI || reaction === "▶" || reaction === "▶️") {
-    nextPage = Math.min(currentPage + 1, totalPages);
-  } else if (reaction === PREV_EMOJI || reaction === "◀" || reaction === "◀️") {
-    nextPage = Math.max(currentPage - 1, 1);
+  if (reaction === SABBIR_NEXT_EMOJI || reaction === "▶" || reaction === "▶️") {
+    nextPage = currentPage + 1;
+    if (nextPage > totalPages) nextPage = 1;
+  } else if (reaction === SABBIR_PREV_EMOJI || reaction === "◀" || reaction === "◀️") {
+    nextPage = currentPage - 1;
+    if (nextPage < 1) nextPage = totalPages;
   } else {
     return;
   }
   if (nextPage === currentPage) return;
 
   const messageID = event.messageID;
-  const lines = buildLines(cmdList, nextPage, totalPages, prefix);
-
-  const ok = await animateEditLines(api, messageID, lines, {
-    perLineMs: 150,
-    clearText: nextPage > currentPage ? "➡ Loading next page..." : "⬅ Loading previous page..."
-  });
+  const body = buildPage(cmdList, nextPage, totalPages, prefix);
+  const ok = await editOnce(api, messageID, body);
 
   if (!ok) {
-    try { await api.sendMessage({ body: lines.join("\n") }, event.threadID); } catch (_) {}
+    try {
+      await new Promise((resolve) => {
+        api.sendMessage({ body }, event.threadID, () => resolve(), messageID);
+      });
+    } catch (_) {}
   }
 
   Reaction.currentPage = nextPage;

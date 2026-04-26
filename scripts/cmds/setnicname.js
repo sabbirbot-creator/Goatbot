@@ -1,3 +1,4 @@
+const SABBIR = "Ariful Islam Sabbir";
 module.exports.config = {
   name: "setnicname",
   version: "1.0.0",

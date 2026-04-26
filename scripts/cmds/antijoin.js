@@ -1,3 +1,4 @@
+const SABBIR = "Ariful Islam Sabbir";
 module.exports.config = {
   name: "antijoin",
   version: "1.0.0",
