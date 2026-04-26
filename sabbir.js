@@ -198,11 +198,29 @@ function removeHomeDir(filePath) {
 function createMessageHelper(api, event) {
     const threadID = event.threadID;
     const messageID = event.messageID;
+    const isGroup = !!event.isGroup;
+
+    async function _typeAndWait(targetThread, ms) {
+        let end = null;
+        try {
+            if (typeof api.sendTypingIndicator === "function") {
+                end = api.sendTypingIndicator(targetThread, () => {}, isGroup);
+            }
+        } catch (_) {}
+        await new Promise(r => setTimeout(r, typeof ms === "number" ? ms : 2000));
+        if (typeof end === "function") {
+            try { end(() => {}); } catch (_) {}
+        }
+    }
 
     const helper = {
         reply: async function (msg, callback) {
             try {
-                const msgObj = typeof msg === 'string' ? { body: msg, mentions: [] } : msg;
+                const isStr = typeof msg === 'string';
+                const msgObj = isStr ? { body: msg, mentions: [] } : { ...msg };
+                const fast = msgObj._fast === true;
+                if (!isStr) delete msgObj._fast;
+                if (!fast) await _typeAndWait(threadID, 2000);
                 const info = await api.sendMessage(msgObj, threadID, messageID);
                 if (typeof callback === 'function') callback(null, info);
                 return info;
@@ -214,7 +232,11 @@ function createMessageHelper(api, event) {
         send: async function (msg, tid, callback) {
             const targetThread = tid || threadID;
             try {
-                const msgObj = typeof msg === 'string' ? { body: msg, mentions: [] } : msg;
+                const isStr = typeof msg === 'string';
+                const msgObj = isStr ? { body: msg, mentions: [] } : { ...msg };
+                const fast = msgObj._fast === true;
+                if (!isStr) delete msgObj._fast;
+                if (!fast) await _typeAndWait(targetThread, 2000);
                 const info = await api.sendMessage(msgObj, targetThread);
                 if (typeof callback === 'function') callback(null, info);
                 return info;

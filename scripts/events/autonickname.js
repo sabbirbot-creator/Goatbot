@@ -1,14 +1,17 @@
 const { getName } = require("../../utils/getName.js");
+const { animateSendLines, sleep } = require("../../utils/animation.js");
 
 module.exports.config = {
   name: "autonickname",
-  version: "1.0.0",
+  version: "1.1.0",
   role: 0,
   credits: "Ariful Islam Sabbir",
-  description: "Group এ কেউ join করলে automatic nickname সেট করে দেয়",
+  description: "Bot গ্রুপে join করলে নিজের nickname সেট + welcome message; অন্য কেউ join করলে template অনুযায়ী auto nickname",
   category: "Events",
   countDown: 0
 };
+
+const BOT_NICKNAME = "🤖 Sabbir Bot";
 
 function applyTemplate(template, fullName) {
   const safe = (template || "").toString();
@@ -19,6 +22,28 @@ function applyTemplate(template, fullName) {
     .trim();
 }
 
+async function botSelfWelcome(api, threadID, isGroup) {
+  try { await api.changeNickname(BOT_NICKNAME, threadID, String(api.getCurrentUserID())); } catch (_) {}
+
+  const lines = [
+    "╔══✨ HELLO EVERYONE ✨══╗",
+    "🤖 আমি Sabbir Chat Bot",
+    "👑 Owner: Md Ariful Islam Sabbir",
+    "📋 সব command দেখতে: /help",
+    "📛 Auto Nickname চালু করতে: /autonickname on",
+    "💙 ধন্যবাদ আমাকে add করার জন্য!",
+    "╚══════════════════════╝"
+  ];
+
+  await animateSendLines(api, threadID, lines, {
+    initialBody: "✨ ...",
+    perLineMs: 200,
+    isGroup: !!isGroup,
+    showTyping: true,
+    typingMs: 1200
+  });
+}
+
 module.exports.onStart = async function ({ api, event, threadsData }) {
   if (event.logMessageType !== "log:subscribe") return;
 
@@ -26,18 +51,27 @@ module.exports.onStart = async function ({ api, event, threadsData }) {
   const addedIDs = (logMessageData && logMessageData.addedParticipants) || [];
   if (addedIDs.length === 0) return;
 
-  let td = null;
-  try { td = await threadsData.getData(threadID); } catch (_) {}
-  const cfg = (td && td.data && td.data.autoNickname) || null;
-  if (!cfg || cfg.enabled !== true) return;
-
-  const template = cfg.template || "Member {firstname}";
   const botID = String(api.getCurrentUserID());
+
+  let cfg = null;
+  try {
+    const td = await threadsData.getData(threadID);
+    cfg = (td && td.data && td.data.autoNickname) || null;
+  } catch (_) {}
 
   for (const added of addedIDs) {
     const userID = String(added.userFbId || added.id || "").replace(/^fbid:/, "");
-    if (!userID || userID === botID) continue;
+    if (!userID) continue;
 
+    if (userID === botID) {
+      await botSelfWelcome(api, threadID, true);
+      await sleep(400);
+      continue;
+    }
+
+    if (!cfg || cfg.enabled !== true) continue;
+
+    const template = cfg.template || "Member {firstname}";
     let name = added.fullName || added.name || "";
     if (!name || name === "Facebook User") {
       try { name = await getName(api, userID, ""); } catch (_) {}
@@ -49,7 +83,8 @@ module.exports.onStart = async function ({ api, event, threadsData }) {
     try {
       await api.changeNickname(nickname, threadID, userID);
     } catch (e) {
-      try { console.log(`[autonickname] failed for ${userID} in ${threadID}: ${e && e.error || e && e.message || e}`); } catch (_) {}
+      try { console.log(`[autonickname] failed for ${userID} in ${threadID}: ${(e && (e.error || e.message)) || e}`); } catch (_) {}
     }
+    await sleep(500);
   }
 };

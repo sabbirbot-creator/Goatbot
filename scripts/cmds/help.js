@@ -1,74 +1,86 @@
+const { animateSendLines, animateEditLines, sleep } = require("../../utils/animation.js");
+
 module.exports.config = {
   name: "help",
-  version: "2.0.0",
+  version: "3.0.0",
   hasPermssion: 0,
   credits: "Ariful Islam Sabbir",
-  description: "সব command এর লিস্ট দেখাও — Next/Prev বাটন সহ",
+  description: "সব command এর লিস্ট দেখাও — Next/Prev reaction সহ animation",
   usePrefix: true,
   category: "Info",
   usages: "help [page | command name]",
   cooldowns: 5
 };
 
-const PER_PAGE = 10;
+const PER_PAGE = 8;
+const NEXT_EMOJI = "➡";
+const PREV_EMOJI = "⬅";
 
-function buildPage(cmdList, page, totalPages, prefix) {
-  const totalCmds = cmdList.length;
+function buildLines(cmdList, page, totalPages, prefix) {
   const start = (page - 1) * PER_PAGE;
   const slice = cmdList.slice(start, start + PER_PAGE);
 
-  let text = `╔══✨ SABBiR CHAT BOT ✨══╗\n\n`;
-  text += `👑 Owner: Ariful Islam Sabbir\n`;
-  text += `🤖 Bot: Sabbir Chat Bot\n`;
-  text += `📄 Page: ${page}/${totalPages}  |  📦 Total: ${totalCmds}\n`;
-  text += `──────────────────────\n`;
-
+  const lines = [];
+  lines.push("╔══✨ SABBiR CHAT BOT ✨══╗");
+  lines.push(`👑 Owner: Ariful Islam Sabbir`);
+  lines.push(`📄 Page ${page} / ${totalPages}  •  📦 Total ${cmdList.length}`);
+  lines.push("──────────────────────");
   for (const name of slice) {
-    text += `  ➤ ${prefix}${name}\n`;
+    lines.push(`  ➤ ${prefix}${name}`);
   }
-
-  text += `──────────────────────\n`;
-
-  const nav = [];
-  if (page > 1) nav.push(`◀ prev`);
-  if (page < totalPages) nav.push(`next ▶`);
-
-  if (nav.length > 0) {
-    text += `📌 Navigation: ${nav.join("  |  ")}\n`;
-    text += `💬 Reply করো উপরের যেকোনো একটি লিখে\n`;
+  lines.push("──────────────────────");
+  const navParts = [];
+  if (page > 1) navParts.push(`${PREV_EMOJI} Prev`);
+  if (page < totalPages) navParts.push(`${NEXT_EMOJI} Next`);
+  if (navParts.length > 0) {
+    lines.push(`📌 React: ${navParts.join("   ")}`);
   }
+  lines.push(`💡 ${prefix}help <command> — বিস্তারিত`);
+  lines.push("╚══════════════════════╝");
 
-  text += `\n💡 /help <command> → বিস্তারিত\n`;
-  text += `╚══════════════════════╝`;
-
-  return text;
+  return lines;
 }
 
-module.exports.onStart = async function ({ api, event, message, args }) {
-  const prefix = global.GoatBot?.config?.prefix || "/";
+function getCmdList() {
   const commands = global.GoatBot.commands;
-
   const cmdList = [];
   for (const [, cmd] of commands) {
-    const c = cmd.config;
+    const c = cmd && cmd.config;
     if (!c || !c.name || c.hidden) continue;
     cmdList.push(c.name);
   }
   cmdList.sort();
+  return cmdList;
+}
 
-  const totalCmds = cmdList.length;
-  const totalPages = Math.ceil(totalCmds / PER_PAGE);
+async function setNavReactions(api, messageID) {
+  try { await api.setMessageReaction(PREV_EMOJI, messageID, () => {}, true); } catch (_) {}
+  await sleep(150);
+  try { await api.setMessageReaction(NEXT_EMOJI, messageID, () => {}, true); } catch (_) {}
+}
+
+module.exports.onStart = async function ({ api, event, message, args }) {
+  const prefix = (global.GoatBot && global.GoatBot.config && global.GoatBot.config.prefix) || "/";
+  const cmdList = getCmdList();
+  const totalPages = Math.max(1, Math.ceil(cmdList.length / PER_PAGE));
 
   if (args[0]) {
     const pageNum = parseInt(args[0]);
-
     if (!isNaN(pageNum)) {
       const page = Math.max(1, Math.min(pageNum, totalPages));
-      const text = buildPage(cmdList, page, totalPages, prefix);
-      const sentMsg = await message.reply(text);
+      const lines = buildLines(cmdList, page, totalPages, prefix);
 
-      if (totalPages > 1 && sentMsg && sentMsg.messageID) {
-        global.GoatBot.onReply.set(sentMsg.messageID, {
+      const sent = await animateSendLines(api, event.threadID, lines, {
+        initialBody: "✨ Loading help menu...",
+        perLineMs: 180,
+        replyToMessageID: event.messageID,
+        isGroup: !!event.isGroup,
+        showTyping: true,
+        typingMs: 1000
+      });
+
+      if (sent && sent.messageID && totalPages > 1) {
+        global.GoatBot.onReaction.set(sent.messageID, {
           commandName: "help",
           author: String(event.senderID),
           currentPage: page,
@@ -76,35 +88,52 @@ module.exports.onStart = async function ({ api, event, message, args }) {
           totalPages,
           prefix
         });
+        await setNavReactions(api, sent.messageID);
       }
       return;
     }
 
     const cmdName = args[0].toLowerCase();
-    const cmd = commands.get(cmdName);
+    const cmd = global.GoatBot.commands.get(cmdName);
     if (!cmd) {
       return message.reply(
         `❌ "${cmdName}" নামে কোনো command পাওয়া যায়নি।\n📋 সব command দেখতে: ${prefix}help`
       );
     }
     const c = cmd.config;
-    return message.reply(
-      `╔══✨ COMMAND INFO ✨══╗\n\n` +
-      `📌 Command: ${prefix}${c.name}\n` +
-      `📝 বিবরণ: ${c.description || "নেই"}\n` +
-      `🔧 ব্যবহার: ${prefix}${c.usages || c.name}\n` +
-      `📂 Category: ${c.category || "General"}\n` +
-      `⏱ Cooldown: ${c.cooldowns || 0}s\n` +
-      `👑 Credits: ${c.credits || "—"}\n\n` +
+    const detailLines = [
+      `╔══✨ COMMAND INFO ✨══╗`,
+      `📌 Command: ${prefix}${c.name}`,
+      `📝 বিবরণ: ${c.description || "নেই"}`,
+      `🔧 ব্যবহার: ${prefix}${c.usages || c.name}`,
+      `📂 Category: ${c.category || "General"}`,
+      `⏱ Cooldown: ${c.cooldowns || c.countDown || 0}s`,
+      `👑 Credits: ${c.credits || "—"}`,
       `╚══════════════════════╝`
-    );
+    ];
+    await animateSendLines(api, event.threadID, detailLines, {
+      initialBody: "✨ Loading...",
+      perLineMs: 180,
+      replyToMessageID: event.messageID,
+      isGroup: !!event.isGroup,
+      showTyping: true,
+      typingMs: 800
+    });
+    return;
   }
 
-  const text = buildPage(cmdList, 1, totalPages, prefix);
-  const sentMsg = await message.reply(text);
+  const lines = buildLines(cmdList, 1, totalPages, prefix);
+  const sent = await animateSendLines(api, event.threadID, lines, {
+    initialBody: "✨ Loading help menu...",
+    perLineMs: 180,
+    replyToMessageID: event.messageID,
+    isGroup: !!event.isGroup,
+    showTyping: true,
+    typingMs: 1000
+  });
 
-  if (totalPages > 1 && sentMsg && sentMsg.messageID) {
-    global.GoatBot.onReply.set(sentMsg.messageID, {
+  if (sent && sent.messageID && totalPages > 1) {
+    global.GoatBot.onReaction.set(sent.messageID, {
       commandName: "help",
       author: String(event.senderID),
       currentPage: 1,
@@ -112,40 +141,46 @@ module.exports.onStart = async function ({ api, event, message, args }) {
       totalPages,
       prefix
     });
+    await setNavReactions(api, sent.messageID);
   }
 };
 
-module.exports.onReply = async function ({ api, event, Reply, message }) {
-  const { body, senderID } = event;
-  const input = (body || "").toLowerCase().trim();
+module.exports.onReaction = async function ({ api, event, Reaction }) {
+  const userID = String(event.userID || event.senderID || "");
+  if (userID !== String(Reaction.author)) return;
 
-  if (String(senderID) !== String(Reply.author)) return;
-
-  const { currentPage, cmdList, totalPages, prefix } = Reply;
+  const reaction = (event.reaction || "").trim();
+  const { currentPage, cmdList, totalPages, prefix } = Reaction;
 
   let nextPage = currentPage;
-
-  if (input === "next" || input === "next ▶" || input === "▶") {
+  if (reaction === NEXT_EMOJI || reaction === "▶" || reaction === "▶️") {
     nextPage = Math.min(currentPage + 1, totalPages);
-  } else if (input === "prev" || input === "◀ prev" || input === "◀") {
+  } else if (reaction === PREV_EMOJI || reaction === "◀" || reaction === "◀️") {
     nextPage = Math.max(currentPage - 1, 1);
   } else {
     return;
   }
+  if (nextPage === currentPage) return;
 
-  Reply.delete();
+  const messageID = event.messageID;
+  const lines = buildLines(cmdList, nextPage, totalPages, prefix);
 
-  const text = buildPage(cmdList, nextPage, totalPages, prefix);
-  const sentMsg = await message.reply(text);
+  const ok = await animateEditLines(api, messageID, lines, {
+    perLineMs: 150,
+    clearText: nextPage > currentPage ? "➡ Loading next page..." : "⬅ Loading previous page..."
+  });
 
-  if (sentMsg && sentMsg.messageID) {
-    global.GoatBot.onReply.set(sentMsg.messageID, {
-      commandName: "help",
-      author: String(senderID),
-      currentPage: nextPage,
-      cmdList,
-      totalPages,
-      prefix
-    });
+  if (!ok) {
+    try { await api.sendMessage({ body: lines.join("\n") }, event.threadID); } catch (_) {}
   }
+
+  Reaction.currentPage = nextPage;
+  global.GoatBot.onReaction.set(messageID, {
+    commandName: "help",
+    author: Reaction.author,
+    currentPage: nextPage,
+    cmdList,
+    totalPages,
+    prefix
+  });
 };
