@@ -429,12 +429,24 @@ function parseDelta(defaultFuncs, api, ctx, globalCallback, {
             const isGroup = fmtMsg.isGroup;
             const threadID = fmtMsg.threadID;
             const messageID = fmtMsg.messageID;
-            
+
             global.Fca.Data.event.set("Data", {
                 isGroup,
                 threadID,
                 messageID
             });
+
+            // Cache thread vs user routing so sendMessage knows how to address replies.
+            // This is the authoritative source: messageMetadata.threadKey.threadFbId is set
+            // for groups, otherUserFbId for 1-on-1. Without this cache, sendMessage falls
+            // back to broken length-heuristics and gets FB error 1545012 in groups.
+            try {
+              if (isGroup) {
+                if (!global.Fca.isThread.includes(threadID)) global.Fca.isThread.push(threadID);
+              } else {
+                if (!global.Fca.isUser.includes(threadID)) global.Fca.isUser.push(threadID);
+              }
+            } catch (_) {}
 
             if (global.Fca.Require.FastConfig.AntiGetInfo.AntiGetThreadInfo) {
                 global.Fca.Data.MsgCount.set(fmtMsg.threadID, ((global.Fca.Data.MsgCount.get(fmtMsg.threadID)) + 1 || 1));
@@ -533,6 +545,15 @@ function parseDelta(defaultFuncs, api, ctx, globalCallback, {
             timestamp: parseInt(delta.deltaMessageReply.message.messageMetadata.timestamp),
             participantIDs: (delta.deltaMessageReply.message.participants || []).map((e) => e.toString()),
           };
+
+          // Cache thread vs user routing for replies (same fix as NewMessage path)
+          try {
+            if (callbackToReturn.isGroup) {
+              if (!global.Fca.isThread.includes(callbackToReturn.threadID)) global.Fca.isThread.push(callbackToReturn.threadID);
+            } else {
+              if (!global.Fca.isUser.includes(callbackToReturn.threadID)) global.Fca.isUser.push(callbackToReturn.threadID);
+            }
+          } catch (_) {}
 
           if (delta.deltaMessageReply.repliedToMessage) {
             const mdata =

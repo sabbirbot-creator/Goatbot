@@ -50,6 +50,8 @@ module.exports = function (defaultFuncs, api, ctx) {
       return null;
     }
     else {
+      // Try MQTT first (faster, no extra HTTP). If MQTT isn't ready, fall back to the
+      // legacy HTTP mark_seen endpoint so autoseen still works during reconnects.
       try {
         if (ctx.mqttClient) {
           let err = await new Promise(r => ctx.mqttClient.publish("/mark_thread", JSON.stringify({
@@ -58,12 +60,38 @@ module.exports = function (defaultFuncs, api, ctx) {
             state: read
           }), { qos: 1, retain: false }, r));
           if (err) throw err;
+          callback();
+          return null;
         }
-        else throw { error: "You can only use this function after you start listening." };
+        // No mqttClient — fall through to HTTP fallback below
+        throw { error: "mqtt_not_ready" };
       }
-      catch (e) {
-        callback(e);
-        return e;
+      catch (_e) {
+        try {
+          const httpForm = {
+            "watermarkTimestamp": new Date().getTime(),
+            "shouldSendReadReceipt": true,
+            "commerce_last_message_type": ""
+          };
+          httpForm["ids[" + threadID + "]"] = read;
+          const resData = await (
+            defaultFuncs
+              .post("https://www.facebook.com/ajax/mercury/change_read_status.php", ctx.jar, httpForm)
+              .then(utils.saveCookies(ctx.jar))
+              .then(utils.parseAndCheckLogin(ctx, defaultFuncs))
+          );
+          if (resData && resData.error) {
+            log.error("markAsRead", resData.error);
+            if (utils.getType(resData.error) == "Object" && resData.error.error === "Not logged in.") ctx.loggedIn = false;
+            callback(resData.error);
+            return resData.error;
+          }
+          callback();
+          return null;
+        } catch (e2) {
+          callback(e2);
+          return e2;
+        }
       }
     }
   };

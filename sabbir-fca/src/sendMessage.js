@@ -159,23 +159,51 @@ module.exports = function (defaultFuncs, api, ctx) {
     }
 
   function send(form, threadID, messageAndOTID, callback, isGroup) {
-//Full Fix sendMessage
-  if (utils.getType(threadID) === "Array") sendContent(form, threadID, false, messageAndOTID, callback);
+    // Routing fix: the previous length-based heuristic was broken for new "61xxx" Facebook
+    // accounts where user IDs and group IDs are both 15 digits, which caused FB to return
+    // error 1545012 ("not part of the conversation") for every group except a cached one.
+    //
+    // We now decide isSingleUser in this priority order:
+    //   1. The caller explicitly passed isGroup (rare)
+    //   2. Caches populated from the live event listener (authoritative source of truth)
+    //   3. The current event in global.Fca.Data.event (matches threadID)
+    //   4. Default to "group" so we don't misroute group sends as 1-on-1 (which is what
+    //      caused the original bug). Inbox replies still work because the cache is filled
+    //      the moment the user's first message arrives.
+
+    if (utils.getType(threadID) === "Array") {
+      return sendContent(form, threadID, false, messageAndOTID, callback);
+    }
+
+    let isSingleUser;
+    if (isGroup === true) isSingleUser = false;
+    else if (isGroup === false) isSingleUser = true;
+    else if (global.Fca.isUser.includes(threadID)) isSingleUser = true;
+    else if (global.Fca.isThread.includes(threadID)) isSingleUser = false;
     else {
-      var THREADFIX = "ThreadID".replace("ThreadID",threadID); // i cũng đôn nâu
-        if (THREADFIX.length <= 15 || global.Fca.isUser.includes(threadID)) sendContent(form, threadID, !isGroup, messageAndOTID, callback);
-        else if (THREADFIX.length >= 15 && THREADFIX.indexOf(1) != 0 || global.Fca.isThread.includes(threadID)) sendContent(form, threadID, threadID.length === 15, messageAndOTID, callback);
-        else {
-          if (global.Fca.Data.event.isGroup) {
-            sendContent(form, threadID, threadID.length === 15, messageAndOTID, callback);
-            global.Fca.isThread.push(threadID);
-          } 
-          else {
-            sendContent(form, threadID, !isGroup, messageAndOTID, callback);
-            global.Fca.isUser.push(threadID);
+      let liveEvt = null;
+      try {
+        if (global.Fca.Data.event && typeof global.Fca.Data.event.get === "function") {
+          liveEvt = global.Fca.Data.event.get("Data");
         }
+      } catch (_) {}
+      if (liveEvt && String(liveEvt.threadID) === String(threadID) && typeof liveEvt.isGroup === "boolean") {
+        isSingleUser = !liveEvt.isGroup;
+      } else {
+        isSingleUser = false;
       }
     }
+
+    // Cache the decision so subsequent sends skip the lookup
+    try {
+      if (isSingleUser) {
+        if (!global.Fca.isUser.includes(threadID)) global.Fca.isUser.push(threadID);
+      } else {
+        if (!global.Fca.isThread.includes(threadID)) global.Fca.isThread.push(threadID);
+      }
+    } catch (_) {}
+
+    sendContent(form, threadID, isSingleUser, messageAndOTID, callback);
   }
   
   function handleUrl(msg, form, callback, cb) {

@@ -76,3 +76,32 @@ We added a Puppeteer-core + system Chromium fallback (`sabbir-fca/Extra/fetchFbD
 Facebook's first response includes a `Set-Cookie` that explicitly **deletes `c_user` and `xs`** (the only cookies that prove identity). The page that gets rendered is the public login form, not the homepage. This is the definitive Facebook signal for "your session has been revoked" — it cannot be worked around with code. The cookies in `account.txt` are dead.
 
 To bring the bot online, replace `account.txt` with a fresh appstate exported right after a successful Chrome login (e.g. via the C3C-FBState browser extension, or any tool that exports `document.cookie` + `httpOnly` cookies for `*.facebook.com`). The headless-browser fallback remains wired in: when a fresh, server-side-valid appstate is supplied, it should now succeed at fetching the live `fb_dtsg`.
+
+### FCA group-routing fix (2026-04-26): "1545012 not part of conversation"
+
+**Symptom**: Bot logs in fine, MQTT connects, message events flow from every group, but `message.reply` only delivers in **one** group chat. All other groups produce `WARN sendMessage Got error 1545012. This might mean that you're not part of the conversation <gcID>`.
+
+**Root cause** in `sabbir-fca/src/sendMessage.js` `send()` function: the routing decision was based on a string-length heuristic written for legacy 9–10-digit Messenger IDs. For new "61xxxxxxxxxxxxx" Facebook accounts, *both* user IDs and group IDs are 15 digits, so the heuristic always took the user branch:
+
+```js
+if (THREADFIX.length <= 15 || global.Fca.isUser.includes(threadID))
+    sendContent(form, threadID, !isGroup, ...);   // ← isGroup=null here, so isSingleUser=true
+```
+
+That made FCA send `specific_to_list[0]=fbid:<gcID>` + `other_user_fbid=<gcID>` (a 1-on-1 payload) to a group thread, which Facebook rejects with error 1545012. The "one GC that worked" was a thread already cached in `global.Fca.isThread` from an earlier session.
+
+**Fix** (two files):
+
+1. `sabbir-fca/src/listenMqtt.js` — in the NewMessage path *and* the deltaMessageReply path, push every received `threadID` into the appropriate cache (`global.Fca.isThread` if `isGroup`, else `global.Fca.isUser`). This is the authoritative source: `messageMetadata.threadKey.threadFbId` is set for groups, `otherUserFbId` for 1-on-1.
+
+2. `sabbir-fca/src/sendMessage.js` — replaced the broken `send()` routing with cache-first lookup:
+   - explicit `isGroup` arg wins,
+   - then `global.Fca.isUser` / `global.Fca.isThread` cache,
+   - then live event in `global.Fca.Data.event.get("Data")` (matched by threadID),
+   - default to **group** routing so unsolicited sends to fresh threads don't misroute as 1-on-1 (the original bug).
+
+The cache is now populated on every received message, so by the time the bot replies, `isSingleUser` is decided correctly for both inbox and any group.
+
+### FCA autoseen fix (2026-04-26)
+
+`scripts/cmds/autoseen.js` calls `api.markAsRead(threadID, true)`. The MQTT-only branch in `sabbir-fca/src/markAsRead.js` silently dropped requests when `ctx.mqttClient` was momentarily unavailable (during reconnect). Patched to fall back to the legacy HTTP `mercury/change_read_status.php` endpoint when the MQTT publish fails, and to actually call `callback()` on the MQTT success path so the surrounding promise resolves.
