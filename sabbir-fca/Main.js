@@ -337,7 +337,20 @@ function BypassAutomationNotification(resp, jar, globalOptions, appstate,ID) {
 
 function buildAPI(globalOptions, html, jar, bypass_region) {
     //new feat
-    const fb_dtsg = utils.getFroms(html, '["DTSGInitData",[],{"token":"', '","')[0]; //nhăm nhăm nhăm nhăm
+    let fb_dtsg = utils.getFroms(html, '["DTSGInitData",[],{"token":"', '","')[0]; //nhăm nhăm nhăm nhăm
+    // PATCH: modern Facebook ships DTSGInitData with empty token; the value is fetched async via JS.
+    // Try alternate extractors that some account variants still expose, then fall back to the LSD token,
+    // which Facebook accepts as a CSRF token for many graphql / chat endpoints when the user is authenticated.
+    if (!fb_dtsg) {
+        let alt = (html.match(/DTSGInitialData[^}]{0,200}"token":"([^"]+)"/) || [])[1]
+              || (html.match(/name="fb_dtsg" value="([^"]+)"/) || [])[1]
+              || (html.match(/"async_get_token":"([^"]+)"/) || [])[1]
+              || (html.match(/\["LSD",\[\],\{"token":"([^"]+)"/) || [])[1];
+        if (alt) {
+            fb_dtsg = alt;
+            console.log("[FCA-DEBUG] fb_dtsg recovered via fallback extractor (len=" + alt.length + ")");
+        }
+    }
 
     //check tiktik
     var userID;
@@ -345,6 +358,37 @@ function buildAPI(globalOptions, html, jar, bypass_region) {
     //.log(cookie)
     var maybeUser = cookie.filter(function(val) { return val.cookieString().split("=")[0] === "c_user"; });
     var maybeTiktik = cookie.filter(function(val) { return val.cookieString().split("=")[0] === "i_user"; });
+
+    console.log("[FCA-DEBUG] buildAPI called: html.length=" + (html||'').length +
+        " fb_dtsg=" + (fb_dtsg ? 'present' : 'MISSING') +
+        " jar_c_user=" + (maybeUser.length ? 'present' : 'MISSING') +
+        " jar_i_user=" + (maybeTiktik.length ? 'present' : 'MISSING') +
+        " hasDTSGStr=" + ((html||'').indexOf('DTSGInitData') >= 0) +
+        " hasFb_dtsg_input=" + ((html||'').indexOf('name="fb_dtsg"') >= 0) +
+        " AppState=" + (global.Fca && global.Fca.Data && Array.isArray(global.Fca.Data.AppState) ? 'loaded(' + global.Fca.Data.AppState.length + ')' : 'NONE'));
+
+    // PATCH: Facebook can clear c_user via Set-Cookie even when returning a logged-in page.
+    // If the HTML clearly shows a logged-in session (DTSGInitData present) but c_user was wiped
+    // from the jar, restore it from the original AppState that was loaded at startup.
+    if (maybeUser.length === 0 && maybeTiktik.length === 0 && global.Fca && global.Fca.Data && Array.isArray(global.Fca.Data.AppState)) {
+        var orig = global.Fca.Data.AppState;
+        var origUser = orig.find(function (c) { return c.key === 'c_user' || c.name === 'c_user'; });
+        var origI = orig.find(function (c) { return c.key === 'i_user' || c.name === 'i_user'; });
+        var origXs = orig.find(function (c) { return c.key === 'xs' || c.name === 'xs'; });
+        var farFuture = "Tue, 19 Jan 2038 03:14:07 GMT";
+        if (origUser) {
+            jar.setCookie("c_user=" + (origUser.value) + "; expires=" + farFuture + "; domain=facebook.com; path=/;", "https://www.facebook.com");
+        }
+        if (origI) {
+            jar.setCookie("i_user=" + (origI.value) + "; expires=" + farFuture + "; domain=facebook.com; path=/;", "https://www.facebook.com");
+        }
+        if (origXs) {
+            jar.setCookie("xs=" + (origXs.value) + "; expires=" + farFuture + "; domain=facebook.com; path=/;", "https://www.facebook.com");
+        }
+        cookie = jar.getCookies("https://www.facebook.com");
+        maybeUser = cookie.filter(function(val) { return val.cookieString().split("=")[0] === "c_user"; });
+        maybeTiktik = cookie.filter(function(val) { return val.cookieString().split("=")[0] === "i_user"; });
+    }
     if (maybeUser.length === 0 && maybeTiktik.length === 0) {
         if (global.Fca.Require.FastConfig.AutoLogin) {
             return global.Fca.Require.logger.Warning(global.Fca.Require.Language.Index.AutoLogin, function() {
@@ -395,30 +439,43 @@ function buildAPI(globalOptions, html, jar, bypass_region) {
 
         let Slot = Object.keys(CHECK_MQTT);
         var mqttEndpoint,region,irisSeqID;
+        // PATCH: tolerate URLs that no longer include a `region` query parameter — pick a sensible default.
+        function _safeRegionFrom(ep) {
+            try {
+                var r = new URL(ep).searchParams.get("region");
+                return r ? r.toUpperCase() : "PRN";
+            } catch (e) { return "PRN"; }
+        }
         Object.keys(CHECK_MQTT).map(function(MQTT) {
             if (CHECK_MQTT[MQTT] && !region) {
                 switch (Slot.indexOf(MQTT)) {
                     case 0: {
                         irisSeqID = CHECK_MQTT[MQTT][1];
                             mqttEndpoint = CHECK_MQTT[MQTT][2].replace(/\\\//g, "/");
-                            region = new URL(mqttEndpoint).searchParams.get("region").toUpperCase();
+                            region = _safeRegionFrom(mqttEndpoint);
                         return;
                     }
                     case 1: {
                         irisSeqID = CHECK_MQTT[MQTT][2];
                             mqttEndpoint = CHECK_MQTT[MQTT][1].replace(/\\\//g, "/");
-                            region = new URL(mqttEndpoint).searchParams.get("region").toUpperCase();
+                            region = _safeRegionFrom(mqttEndpoint);
                         return;
                     }
                     case 2: {
                         mqttEndpoint = CHECK_MQTT[MQTT][2].replace(/\\\//g, "/"); //is important lmao f?
-                            region = new URL(mqttEndpoint).searchParams.get("region").toUpperCase();
+                            region = _safeRegionFrom(mqttEndpoint);
                         return;
                     }
                 }
             return;
             }
-        });   
+        });
+        // PATCH: if no MQTT match worked at all (Facebook HTML format change), fall back to defaults
+        if (!mqttEndpoint) {
+            mqttEndpoint = "wss://edge-chat.facebook.com/chat?region=prn&sid=" + (Math.floor(Math.random() * 1e10));
+            region = "PRN";
+            irisSeqID = "0";
+        }
 
         const regions = [
             {

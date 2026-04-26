@@ -36,7 +36,12 @@ function getHeaders(url, options, ctx, customHeader) {
         "user-agent": (options.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36"),
         Connection: "keep-alive",
         "sec-fetch-site": 'same-origin',
-        "sec-fetch-mode": 'cors'
+        "sec-fetch-mode": 'cors',
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "accept-language": "en-US,en;q=0.9",
+        "sec-ch-ua": "\"Chromium\";v=\"112\", \"Microsoft Edge\";v=\"112\", \"Not:A-Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
     };
     if (customHeader) Object.assign(headers, customHeader);
     if (ctx && ctx.region) headers["X-MSGR-Region"] = ctx.region;
@@ -2708,7 +2713,7 @@ function parseAndCheckLogin(ctx, defaultFuncs, retryCount) {
                         await Check();
                     });
                 }
-                if (res.request.uri && res.request.uri.href.includes("https://www.facebook.com/checkpoint/")) {
+                if (res.request && res.request.uri && res.request.uri.href && res.request.uri.href.includes("https://www.facebook.com/checkpoint/")) {
                     if (res.request.uri.href.includes('601051028565049')) {
                         return global.Fca.BypassAutomationNotification(undefined, ctx.jar, ctx.globalOptions, undefined ,process.env.UID)
                     }
