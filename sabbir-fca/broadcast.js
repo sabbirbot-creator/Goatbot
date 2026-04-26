@@ -1,7 +1,11 @@
 'use strict';
 
 const logger = require('./logger');
-const Fetch = require('got');
+
+// Node 20 ships a global `fetch`. We avoid `got` here because the version
+// pulled in by this dependency tree is ESM-only and removed the `.get` /
+// `.post` shortcuts, which is what produced the historical
+// `Fetch.get is not a function` warning during startup.
 
 const broadcastConfig = {
   enabled: false,
@@ -10,8 +14,15 @@ const broadcastConfig = {
 
 const fetchBroadcastData = async () => {
   try {
-    const response = await Fetch.get('https://raw.githubusercontent.com/KanzuXHorizon/Global_Horizon/main/Fca_BroadCast.json');
-    broadcastConfig.data = JSON.parse(response.body.toString());
+    const response = await fetch(
+      'https://raw.githubusercontent.com/KanzuXHorizon/Global_Horizon/main/Fca_BroadCast.json',
+      { method: 'GET' }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    const body = await response.text();
+    broadcastConfig.data = JSON.parse(body);
     return broadcastConfig.data;
   } catch (error) {
     logger.Error(`Failed to fetch broadcast data: ${error.message}`);
