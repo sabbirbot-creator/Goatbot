@@ -1,282 +1,130 @@
-# Unofficial Facebook Chat API
-<a href="https://www.npmjs.com/package/fca-unofficial"><img alt="npm version" src="https://img.shields.io/npm/v/fca-unofficial.svg?style=flat-square"></a>
-<img alt="version" src="https://img.shields.io/github/package-json/v/VangBanLaNhat/fca-unofficial?label=github&style=flat-square">
-<a href="https://www.npmjs.com/package/fca-unofficial"><img src="https://img.shields.io/npm/dm/fca-unofficial.svg?style=flat-square" alt="npm downloads"></a>
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+# Facebook Unofficial API
 
-Facebook now has an official API for chat bots [here](https://developers.facebook.com/docs/messenger-platform).
+**Available Languages**: [🇺🇸](https://www.cy4u.dev/Facebook-Unofficial-API/ "English") [🇹🇷](https://www.cy4u.dev/Facebook-Unofficial-API/tr "Turkish")
 
-This API is the only way to automate chat functionalities on a user account. We do this by emulating the browser. This means doing the exact same GET/POST requests and tricking Facebook into thinking we're accessing the website normally. Because we're doing it this way, this API won't work with an auth token but requires the credentials of a Facebook account.
+[**Facebook**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Facebook") is one of the world's most popular social media platforms with billions of users.
 
-_Disclaimer_: We are not responsible if your account gets banned for spammy activities such as sending lots of messages to people you don't know, sending messages very quickly, sending spammy looking URLs, logging in and out very quickly... Be responsible Facebook citizens.
+For businesses, brands and individuals, **Facebook** offers opportunities to reach large audiences, increase brand awareness and engage with target audiences. However, driving and managing these interactions can sometimes be complex.
 
-See [below](#projects-using-this-api) for projects using this API.
+This is where the new [**Unofficial Facebook API**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Unofficial Facebook API") we developed with **TypeScript** comes in.
 
-See the [full changelog](/CHANGELOG.md) for release details.
+This library makes it easier to manage your interactions on **Facebook** and allows businesses or developers to operate more effectively on the Facebook platform.
 
-## Install
-If you just want to use fca-unofficial, you should use this command:
-```bash
-npm install fca-unofficial
+## Introduction to Facebook Library 
+
+This library is written in **TypeScript** for **Node.JS** and allows you to perform various operations using the [**Facebook API**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Facebook API"). Here are some of the features this library provides:
+
+- **Login**: Users can easily log in to their Facebook account using the library. This simplifies the login process and provides a faster start.
+
+- **Page Like**: Businesses or users can use this function to grow their pages and attract more followers. Page liking can be done with a single function call..
+
+- **Post Like**: Users can like other users statuses. This is an effective way to increase engagement and build connections between users.
+
+- **Commenting on a post**: Businesses or individuals can enable users to comment on the posts they publish. This is a way to get more engagement and make the content reach a wider audience.
+
+This library allows you to effectively operate on the **Facebook** platform using the power of **Node.js**. It is also easy to use and reduces the complexity required to manage [**Facebook Unofficial API**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Facebook Unofficial API") calls.
+
+### Getting Started
+
+To start the development process, make sure you have **Node.js** installed on your system. You can download it from the official **Node.js website** or use a package manager like **npm** (**Node Package Manager**) to install it.
+
+#### Installation
+
 ```
-It will download `fca-unofficial` from NPM repositories
-
-### Bleeding edge
-If you want to use bleeding edge (directly from github) to test new features or submit bug report, this is the command for you:
-```bash
-npm install VangBanLaNhat/fca-unofficial
-```
-
-## Testing your bots
-If you want to test your bots without creating another account on Facebook, you can use [Facebook Whitehat Accounts](https://www.facebook.com/whitehat/accounts/).
-
-## Example Usage
-```javascript
-const login = require("fca-unofficial");
-
-// Create simple echo bot
-login({email: "FB_EMAIL", password: "FB_PASSWORD"}, (err, api) => {
-    if(err) return console.error(err);
-
-    api.listen((err, message) => {
-        api.sendMessage(message.body, message.threadID);
-    });
-});
+$ npm i facebook-unofficial-api
+$ bun i facebook-unofficial-api
+$ pnpm i facebook-unofficial-api
 ```
 
-Result:
-
-<img width="517" alt="screen shot 2016-11-04 at 14 36 00" src="https://cloud.githubusercontent.com/assets/4534692/20023545/f8c24130-a29d-11e6-9ef7-47568bdbc1f2.png">
-
-
-## Documentation
-
-You can see it [here](DOCS.md).
-
-## Main Functionality
-
-### Sending a message
-#### api.sendMessage(message, threadID[, callback][, messageID])
-
-Various types of message can be sent:
-* *Regular:* set field `body` to the desired message as a string.
-* *Sticker:* set a field `sticker` to the desired sticker ID.
-* *File or image:* Set field `attachment` to a readable stream or an array of readable streams.
-* *URL:* set a field `url` to the desired URL.
-* *Emoji:* set field `emoji` to the desired emoji as a string and set field `emojiSize` with size of the emoji (`small`, `medium`, `large`)
-
-Note that a message can only be a regular message (which can be empty) and optionally one of the following: a sticker, an attachment or a url.
-
-__Tip__: to find your own ID, you can look inside the cookies. The `userID` is under the name `c_user`.
-
-__Example (Basic Message)__
-```js
-const login = require("fca-unofficial");
-
-login({email: "FB_EMAIL", password: "FB_PASSWORD"}, (err, api) => {
-    if(err) return console.error(err);
-
-    var yourID = "000000000000000";
-    var msg = "Hey!";
-    api.sendMessage(msg, yourID);
-});
-```
-
-__Example (File upload)__
-```js
-const login = require("fca-unofficial");
-
-login({email: "FB_EMAIL", password: "FB_PASSWORD"}, (err, api) => {
-    if(err) return console.error(err);
-
-    // Note this example uploads an image called image.jpg
-    var yourID = "000000000000000";
-    var msg = {
-        body: "Hey!",
-        attachment: fs.createReadStream(__dirname + '/image.jpg')
-    }
-    api.sendMessage(msg, yourID);
-});
-```
-
-------------------------------------
-### Saving session.
-
-To avoid logging in every time you should save AppState (cookies etc.) to a file, then you can use it without having password in your scripts.
-
-__Example__
+#### How to import
 
 ```js
-const fs = require("fs");
-const login = require("fca-unofficial");
-
-var credentials = {email: "FB_EMAIL", password: "FB_PASSWORD"};
-
-login(credentials, (err, api) => {
-    if(err) return console.error(err);
-
-    fs.writeFileSync('appstate.json', JSON.stringify(api.getAppState()));
-});
+const { Facebook } = require('facebook-unofficial-api');
 ```
 
-Alternative: Use [c3c-fbstate](https://github.com/lequanglam/c3c-fbstate) to get fbstate.json (appstate.json)
 
-------------------------------------
-
-### Listening to a chat
-#### api.listen(callback)
-
-Listen watches for messages sent in a chat. By default this won't receive events (joining/leaving a chat, title change etc…) but it can be activated with `api.setOptions({listenEvents: true})`. This will by default ignore messages sent by the current account, you can enable listening to your own messages with `api.setOptions({selfListen: true})`.
-
-__Example__
+#### Login with Facebook
 
 ```js
-const fs = require("fs");
-const login = require("fca-unofficial");
+async function loginRequest() {
+ const facebookInstance = new Facebook();
+ const Username = 'Your Facebook Mail or Username';
+ const Password = 'Your Facebook Password';
 
-// Simple echo bot. It will repeat everything that you say.
-// Will stop when you say '/stop'
-login({appState: JSON.parse(fs.readFileSync('appstate.json', 'utf8'))}, (err, api) => {
-    if(err) return console.error(err);
+// If you want to use a proxy -> facebookInstance.fProxy = 'http://proxy_username:proxy_password@proxy_ip:proxy_port'
 
-    api.setOptions({listenEvents: true});
-
-    var stopListening = api.listenMqtt((err, event) => {
-        if(err) return console.error(err);
-
-        api.markAsRead(event.threadID, (err) => {
-            if(err) console.error(err);
-        });
-
-        switch(event.type) {
-            case "message":
-                if(event.body === '/stop') {
-                    api.sendMessage("Goodbye…", event.threadID);
-                    return stopListening();
-                }
-                api.sendMessage("TEST BOT: " + event.body, event.threadID);
-                break;
-            case "event":
-                console.log(event);
-                break;
-        }
-    });
+facebookInstance.loginRequest(Username, Password).then((response) => {
+console.log(response);
+}).catch((err) => {
+console.log(err);
 });
+} loginRequest()
 ```
 
-------------------------------------
-
-### E2EE Support (meta-messenger bridge)
-
-`fca-unofficial` supports receiving and sending E2EE messages by bridging to `meta-messenger.js`.
-
-Enable E2EE at login:
+#### Pull User Information
 
 ```js
-login({ appState }, {
-    enableE2EE: true,
-    e2eeMemoryOnly: false,
-    e2eeDevicePath: "./e2ee_device.json"
-}, (err, api) => {
-    if (err) return console.error(err);
+async function checkUserDetails(){
+const UUID = 'Facebook UUID -> You can get it from the login process';
+const Token = 'Facebook Token -> You can get it from the login process';
 
-    api.listenMqtt((listenErr, event) => {
-        if (listenErr) return console.error(listenErr);
+// If you want to use a proxy -> facebookInstance.fProxy = 'http://proxy_username:proxy_password@proxy_ip:proxy_port'
 
-        if (event.type === "e2ee_message") {
-            console.log("[E2EE]", event.body, event.e2ee.chatJid);
-        }
-    });
+facebookInstance.checkUserDetails(UUID,Token).then((response) => {
+console.log(response);
+}).catch((err) => {
+console.log(err);
+})
+}checkUserDetails()
+```
+
+#### Post & Page Like
+
+```js
+const Token = 'Facebook Token -> You can get it from the login process';
+const postID = 'pfbid027yBu3CAGH1f1mUPom2peRFdDpfWWZJaQy5obBojJobc4dYhuyY144maebMVnRCsBl';
+
+// If you want to use a proxy -> facebookInstance.fProxy = 'http://proxy_username:proxy_password@proxy_ip:proxy_port'
+
+facebookInstance.sendLike(postID, Token).then((response) => {
+console.log(response);
+}).catch((err) => {
+console.log(err);
 });
 ```
 
-Added E2EE APIs:
+#### Send Comment
 
-- `api.connectE2EE(callback)`
-- `api.disconnectE2EE(callback)`
-- `api.getE2EEDeviceData(callback)`
-- `api.sendMessageE2EE(chatJid, message, callback)`
-- `api.sendMediaE2EE(chatJid, mediaType, data, options, callback)`
-- `api.sendReactionE2EE(chatJid, messageID, senderJid, reaction, callback)`
-- `api.sendTypingE2EE(chatJid, isTyping, callback)`
-- `api.unsendMessageE2EE(chatJid, messageID, callback)`
-- `api.downloadE2EEMedia(options, callback)`
+```js
+const Token = 'Facebook Token -> You can get it from the login process';
+const postID = 'pfbid027yBu3CAGH1f1mUPom2peRFdDpfWWZJaQy5obBojJobc4dYhuyY144maebMVnRCsBl';
+const Message = 'Comment';
 
-Auto routing behavior:
+// If you want to use a proxy -> facebookInstance.fProxy = 'http://proxy_username:proxy_password@proxy_ip:proxy_port'
 
-- `api.sendMessage(...)` auto-selects normal or E2EE by `threadID` format.
-- `api.sendTypingIndicator(...)`, `api.unsendMessage(...)`, and `api.setMessageReaction(...)` also support auto routing when E2EE metadata is provided.
-- E2EE-specific APIs (`sendMessageE2EE`, `sendMediaE2EE`, `sendReactionE2EE`, `sendTypingE2EE`, `unsendMessageE2EE`) auto-fallback to normal transport when target is not an E2EE chat JID.
-- For non-E2EE threads, MQTT is now the default transport when MQTT client is connected (`listenMqtt` active).
-- Dedicated files `sendMessageMqtt.js` and `setMessageReactionMqtt.js` were removed; legacy method names are still aliased for backward compatibility.
+facebookInstance.sendComment(postID, Token, Message).then((result) => {
+console.log(result);
+}).catch((err) => {
+console.log(err);
+});
+```
 
-## FAQS
+#### Keywords
 
-1. How do I run tests?
-> For tests, create a `test-config.json` file that resembles `example-config.json` and put it in the `test` directory. From the root >directory, run `npm test`.
+[**Facebook**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Facebook"), [**Facebook API**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Facebook API"), [**Facebook Unofficial API**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Facebook Unofficial API"), [**Unofficial Facebook API**](https://www.cy4u.dev/Facebook-Unofficial-API/ "Unofficial Facebook API"), [**facebook api for developers**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api for developers"), [**facebook api meaning**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api meaning"), [**facebook api hide comment**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api hide comment"), [**facebook api get user info**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api get user info"), [**facebook api configuration**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api configuration"), [**facebook api instagram insights**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api instagram insights"), [**facebook api delete post**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api delete post"), [**facebook api app**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api app"), [**facebook jobs api**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook jobs api"), [**facebook api graph explorer**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api graph explorer"), [**facebook api error code 100**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api error code 100"), [**facebook api block user**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api block user"), [**facebook api for whatsapp**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api for whatsapp"), [**facebook api changes**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api changes"), [**facebook api integration**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api integration"), [**facebook api down**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api down"), [**facebook api access token**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api access token"), [**facebook api java**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api java"), [**facebook api error codes**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api error codes"), [**facebook api an unknown error occurred**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api an unknown error occurred"), [**facebook api key**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api key"), [**facebook api get posts**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api get posts"), [**facebook api free**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api free"), [**facebook api breakdowns**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api breakdowns"), [**facebook api health check**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api health check"), [**facebook api for research**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api for research"), [**facebook api javascript**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api javascript"), [**facebook api typescript**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api typescript"), [**facebook api nodejs**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api nodejs"), [**facebook api instagram_business_account**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api instagram_business_account"), [**facebook api data**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api data"), [**facebook api adset**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api adset"), [**facebook api javascript example**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api javascript example"), [**facebook api typescript example**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api typescript example"), [**facebook api nodejs example**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api nodejs example"), [**facebook api get comments from post**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api get comments from post"), [**facebook api example**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api example"), [**facebook api business_management**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api business_management"), [**facebook api for groups**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api for groups"), [**facebook api changelog**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api changelog"), [**api facebook help**](https://www.cy4u.dev/Facebook-Unofficial-API/ "api facebook help"), [**facebook api developer**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api developer"), [**facebook api explorer**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api explorer"), [**facebook api ad account**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api ad account"), [**facebook post api javascript**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook post api javascript"), [**facebook post api typescript**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook post api typescript"), [**facebook post api nodejs**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook post api nodejs"), [**facebook api events list**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api events list"), [**facebook api bubble**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api bubble"), [**facebook api health status**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api health status"), [**facebook api fields**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api fields"), [**facebook api create post**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api create post"), [**facebook api id**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api id"), [**facebook api date_preset**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api date_preset"), [**facebook api accounts**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api accounts"), [**facebook api java library**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api java library"), [**facebook api key create**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api key create"), [**facebook api get group posts**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api get group posts"), [**facebook api error**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api error"), [**facebook api bugs**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api bugs"), [**facebook api feed**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api feed"), [**facebook api conversions**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api conversions"), [**facebook api header**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api header"), [**facebook api graph**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api graph"), [**facebook api documentation**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api documentation"), [**facebook api insights metrics**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api insights metrics"), [**facebook api download video**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api download video"), [**facebook api access token expiration**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api access token expiration"), [**facebook share api javascript**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook share api javascript"), [**facebook share api typescript**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook share api typescript"), [**facebook share api nodejs**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook share api nodejs"), [**facebook api enroll_status**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api enroll_status"), [**facebook api bot**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api bot"), [**facebook api hashtag search**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api hashtag search"), [**facebook api friends list**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api friends list"), [**facebook api campaign**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api campaign"), [**facebook api issues**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api issues"), [**facebook api debugger**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api debugger"), [**facebook api authentication**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api authentication"), [**facebook api json**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api json"), [**facebook api github**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api github"), [**facebook api endpoints**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api endpoints"), [**facebook api batch request**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api batch request"), [**facebook api key and secret**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api key and secret"), [**facebook api for posts**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api for posts"), [**facebook api cost**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api cost"), [**facebook api html**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api html"), [**facebook api get posts from page**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api get posts from page"), [**facebook api create event**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api create event"), [**facebook api instagram**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api instagram"), [**facebook api download**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api download"), [**facebook api ad creative**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api ad creative"), [**facebook javascript api tutorial**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook javascript api tutorial"), [**facebook typescript api tutorial**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook typescript api tutorial"), [**facebook nodejs api tutorial**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook nodejs api tutorial"), [**facebook api birthdays**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api birthdays"), [**facebook api generate access token**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api generate access token"), [**facebook api error_subcode 33**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api error_subcode 33"), [**facebook api for ads**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api for ads"), [**facebook api comments**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api comments"), [**facebook api insights**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api insights"), [**facebook api deprecation**](https://www.cy4u.dev/Facebook-Unofficial-API/ ""), [**facebook api ads**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api ads"), [**facebook api events**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api events"), [**facebook api business_management permission**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api business_management permission"), [**facebook api key for facebook login**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api key for facebook login"), [**facebook api get pages list**](https://www.cy4u.dev/Facebook-Unofficial-API/ "facebook api get pages list"), [**NodeJS Developer**](https://www.cy4u.dev "NodeJS Developer"), [**Back-end Developer**](https://www.cy4u.dev "Back-end Developer"), [**Node.JS Developer**](https://www.cy4u.dev "Node.JS Developer"), [**Backend Developer**](https://www.cy4u.dev "Backend Developer")
 
-2. Why doesn't `sendMessage` always work when I'm logged in as a page?
-> Pages can't start conversations with users directly; this is to prevent pages from spamming users.
+#### Sponsor & Donate
 
-3. What do I do when `login` doesn't work?
-> First check that you can login to Facebook using the website. If login approvals are enabled, you might be logging in incorrectly. For how to handle login approvals, read our docs on [`login`](DOCS.md#login).
+[Github](https://github.com/sponsors/cy4udev "cy4udev github") | [Patreon](https://patreon.com/cy4udev "cy4udev patreon") | [BuyMeaCoffee](https://www.buymeacoffee.com/cy4udev "cy4udev BuyMeaCoffee")
 
-4. How can I avoid logging in every time?  Can I log into a previous session?
-> We support caching everything relevant for you to bypass login. `api.getAppState()` returns an object that you can save and pass into login as `{appState: mySavedAppState}` instead of the credentials object.  If this fails, your session has expired.
+#### Copyright & Other Issues
 
-5. Do you support sending messages as a page?
-> Yes, set the pageID option on login (this doesn't work if you set it using api.setOptions, it affects the login process).
-> ```js
-> login(credentials, {pageID: "000000000000000"}, (err, api) => { … }
-> ```
+Copyright: [copyright@cy4u.dev](mailto:copyright@cy4u.dev "copyright@cy4u.dev") | Other Issues: [hello@cy4u.dev](mailto:hello@cy4u.dev "hello@cy4u.dev")
 
-6. I'm getting some crazy weird syntax error like `SyntaxError: Unexpected token [`!!!
-> Please try to update your version of node.js before submitting an issue of this nature.  We like to use new language features.
+#### Social Media
 
-7. I don't want all of these logging messages!
-> You can use `api.setOptions` to silence the logging. You get the `api` object from `login` (see example above). Do
-> ```js
-> api.setOptions({
->     logLevel: "silent"
-> });
-> ```
+[Linkedin](https://www.linkedin.com/company/cy4udev/ "cy4udev linkedin") | [Twitter](https://twitter.com/cy4udev "cy4udev twitter") | [Bluesky](https://bsky.app/profile/cy4u.dev "cy4udev bluesky") | [Instagram](https://instagram.com/cy4udev "cy4udev instagram") | [Youtube](https://www.youtube.com/@cy4udev "cy4udev youtube") | [Telegram](https://t.me/cy4udev "cy4udev telegram") | [Github](https://github.com/cy4udev "cy4udev github") | [Npmjs](https://www.npmjs.com/~cy4udev "cy4udev npmjs")
 
-8. If my project installs `fca-unofficial` as a dependency, do I need to run `pnpm run build:e2ee` in that project?
-> Usually no. That script lives in `fca-unofficial` itself, so it is only available when you run it inside the package that defines it. For consuming projects, the normal flow is to install dependencies and let `meta-messenger.js` download its prebuilt bridge during install.
->
-> If you want your own app to expose a wrapper, you can add a script like this in your app's `package.json`:
-> ```json
->   "scripts": {
->     "build:e2ee": "node -e \"const cp=require('child_process');const fs=require('fs');const path=require('path');const {createRequire}=require('module');const fcaPkg=require.resolve('fca-unofficial/package.json');const fcaRequire=createRequire(fcaPkg);let metaPkg;try{metaPkg=fcaRequire.resolve('meta-messenger.js/package.json');}catch(e){console.error('meta-messenger.js not found from fca-unofficial context. Run: pnpm add meta-messenger.js');process.exit(1);}const p=path.dirname(metaPkg);cp.execSync('pnpm install --force --ignore-scripts=false',{cwd:p,stdio:'inherit',shell:true});cp.execSync('node scripts/postinstall.mjs',{cwd:p,stdio:'inherit',shell:true});let ext='so';if(process.platform==='win32') ext='dll';if(process.platform==='darwin') ext='dylib';const out=path.join(p,'build','messagix.'+ext);if(!fs.existsSync(out)){console.error('E2EE native bridge was not created: '+out);console.error('Try: MESSAGIX_BUILD_FROM_SOURCE=true pnpm run build:e2ee (requires Go)');process.exit(1);}console.log('E2EE bridge ready: '+out);\""
->   }
-> ```
-> If the bridge is still missing, rebuild from source with `MESSAGIX_BUILD_FROM_SOURCE=true` and Go 1.24+.
+#### License
 
-<a name="projects-using-this-api"></a>
-## Projects using this API:
-
-- [c3c](https://github.com/lequanglam/c3c) - A bot that can be customizable using plugins. Support Facebook & Discord.
-
-## Projects using this API (original repository, facebook-chat-api):
-
-- [Messer](https://github.com/mjkaufer/Messer) - Command-line messaging for Facebook Messenger
-- [messen](https://github.com/tomquirk/messen) - Rapidly build Facebook Messenger apps in Node.js
-- [Concierge](https://github.com/concierge/Concierge) - Concierge is a highly modular, easily extensible general purpose chat bot with a built in package manager
-- [Marc Zuckerbot](https://github.com/bsansouci/marc-zuckerbot) - Facebook chat bot
-- [Marc Thuckerbot](https://github.com/bsansouci/lisp-bot) - Programmable lisp bot
-- [MarkovsInequality](https://github.com/logicx24/MarkovsInequality) - Extensible chat bot adding useful functions to Facebook Messenger
-- [AllanBot](https://github.com/AllanWang/AllanBot-Public) - Extensive module that combines the facebook api with firebase to create numerous functions; no coding experience is required to implement this.
-- [Larry Pudding Dog Bot](https://github.com/Larry850806/facebook-chat-bot) - A facebook bot you can easily customize the response
-- [fbash](https://github.com/avikj/fbash) - Run commands on your computer's terminal over Facebook Messenger
-- [Klink](https://github.com/KeNt178/klink) - This Chrome extension will 1-click share the link of your active tab over Facebook Messenger
-- [Botyo](https://github.com/ivkos/botyo) - Modular bot designed for group chat rooms on Facebook
-- [matrix-puppet-facebook](https://github.com/matrix-hacks/matrix-puppet-facebook) - A facebook bridge for [matrix](https://matrix.org)
-- [facebot](https://github.com/Weetbix/facebot) - A facebook bridge for Slack.
-- [Botium](https://github.com/codeforequity-at/botium-core) - The Selenium for Chatbots
-- [Messenger-CLI](https://github.com/AstroCB/Messenger-CLI) - A command-line interface for sending and receiving messages through Facebook Messenger.
-- [AssumeZero-Bot](https://github.com/AstroCB/AssumeZero-Bot) – A highly customizable Facebook Messenger bot for group chats.
-- [Miscord](https://github.com/Bjornskjald/miscord) - An easy-to-use Facebook bridge for Discord.
-- [chat-bridge](https://github.com/rexx0520/chat-bridge) - A Messenger, Telegram and IRC chat bridge.
-- [messenger-auto-reply](https://gitlab.com/theSander/messenger-auto-reply) - An auto-reply service for Messenger.
-- [BotCore](https://github.com/AstroCB/BotCore) – A collection of tools for writing and managing Facebook Messenger bots.
-- [mnotify](https://github.com/AstroCB/mnotify) – A command-line utility for sending alerts and notifications through Facebook Messenger.
+[**Can Yesilyurt**](https://canyesilyurt.com "Can Yesilyurt") | [**cy4udev**](https://www.cy4u.dev "cy4udev") | [**apiway**](https://apiway.io "apiway")

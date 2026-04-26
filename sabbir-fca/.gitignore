@@ -1,8 +1,5 @@
-node_modules
-ts
-facebook
-test-bot.js
-test-bot-config.json
-
-*.env
-test/appstate.json
+.DS_STORE
+node_modules/*
+app.js
+bun.lockb
+_includes/*
