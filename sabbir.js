@@ -330,7 +330,7 @@ global.temp = {
 };
 
 (async () => {
-        require(`./bot/login/login.js`);
+        require(`./utils/login.js`);
 })();
 const express = require('express');
 const app = express();

@@ -566,7 +566,7 @@ function stopListening(keyListen) {
 
 async function startBot(loginWithEmail) {
         console.log(colors.hex("#f5ab00")(createLine("START LOGGING IN", true)));
-        const currentVersion = require("../../package.json").version;
+        const currentVersion = require("../package.json").version;
         const tooOldVersion = (await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Storage/main/tooOldVersions.txt")).data || "0.0.0";
         // nếu version cũ hơn
         if ([-1, 0].includes(compareVersion(currentVersion, tooOldVersion))) {
@@ -641,7 +641,7 @@ async function startBot(loginWithEmail) {
                                 // —————————— CHECK DASHBOARD —————————— //
                                 if (global.GoatBot.config.dashBoard?.enable == true) {
                                         try {
-                                                await require("../../dashboard/app.js")(null);
+                                                await require("../dashboard/app.js")(null);
                                                 log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
                                         }
                                         catch (err) {
@@ -731,7 +731,7 @@ async function startBot(loginWithEmail) {
                         // ——————————————————— LOAD DATA ——————————————————— //
                         const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = await require(process.env.NODE_ENV === 'development' ? "./loadData.dev.js" : "./loadData.js")(api, createLine);
                         // ————————————————— CUSTOM SCRIPTS ————————————————— //
-                        await require("../custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
+                        await require("../bot/custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
                         // —————————————————— LOAD SCRIPTS —————————————————— //
                         await require(process.env.NODE_ENV === 'development' ? "./loadScripts.dev.js" : "./loadScripts.js")(api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine);
                         // ———————————— CHECK AUTO LOAD SCRIPTS ———————————— //
@@ -795,7 +795,7 @@ async function startBot(loginWithEmail) {
                         if (global.GoatBot.config.dashBoard?.enable == true && dashBoardIsRunning == false) {
                                 logColor('#f5ab00', createLine('DASHBOARD'));
                                 try {
-                                        await require("../../dashboard/app.js")(api);
+                                        await require("../dashboard/app.js")(api);
                                         log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
                                         dashBoardIsRunning = true;
                                 }
@@ -995,7 +995,7 @@ async function startBot(loginWithEmail) {
                                                 return;
                                 }
 
-                                const handlerAction = require("../handler/handlerAction.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
+                                const handlerAction = require("../includes/handle/handlerAction.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
 
                                 if (hasBanned === false)
                                         handlerAction(event);
@@ -1069,7 +1069,7 @@ async function startBot(loginWithEmail) {
                                 }, restartListenMqtt.timeRestart);
                                 global.intervalRestartListenMqtt = restart;
                         }
-                        require('../autoUptime.js');
+                        require('../bot/autoUptime.js');
                 });
         })(appState);
 
