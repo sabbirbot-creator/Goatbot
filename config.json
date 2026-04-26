@@ -58,9 +58,9 @@
     "ignoreCommand": []
   },
   "hideNotiMessage": {
-    "userBanned": true,
-    "adminOnly": true,
-    "threadBanned": true
+    "userBanned": false,
+    "adminOnly": false,
+    "threadBanned": false
   },
   "logEvents": {
     "disableAll": false,
