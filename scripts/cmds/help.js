@@ -2,10 +2,10 @@ const SABBIR = "Ariful Islam Sabbir";
 
 module.exports.config = {
   name: "help",
-  version: "4.0.0",
+  version: "5.0.0",
   hasPermssion: 0,
   credits: SABBIR,
-  description: "সব command এর লিস্ট দেখাও — Next/Prev reaction সহ pagination",
+  description: "সব command এর লিস্ট দেখাও — reply দিয়ে next/prev navigation",
   usePrefix: true,
   category: "Info",
   usages: "help [page | command name]",
@@ -13,8 +13,6 @@ module.exports.config = {
 };
 
 const SABBIR_PER_PAGE = 10;
-const SABBIR_NEXT_EMOJI = "➡";
-const SABBIR_PREV_EMOJI = "⬅";
 
 function buildPage(cmdList, page, totalPages, prefix) {
   const start = (page - 1) * SABBIR_PER_PAGE;
@@ -31,10 +29,11 @@ function buildPage(cmdList, page, totalPages, prefix) {
   lines.push("──────────────────────");
 
   const navParts = [];
-  if (page > 1) navParts.push(`${SABBIR_PREV_EMOJI} Prev`);
-  if (page < totalPages) navParts.push(`${SABBIR_NEXT_EMOJI} Next`);
+  if (page > 1) navParts.push(`⬅ "prev"`);
+  if (page < totalPages) navParts.push(`"next" ➡`);
   if (navParts.length > 0) {
-    lines.push(`📌 React below: ${navParts.join("   ")}`);
+    lines.push(`📌 Reply: ${navParts.join("   |   ")}`);
+    lines.push(`   (অথবা reply এ page number দিন)`);
   } else {
     lines.push(`📌 শেষ page এ আছেন`);
   }
@@ -54,12 +53,6 @@ function getCmdList() {
   }
   cmdList.sort();
   return cmdList;
-}
-
-async function setNavReactions(api, messageID) {
-  try { await api.setMessageReaction(SABBIR_PREV_EMOJI, messageID, () => {}, true); } catch (_) {}
-  await new Promise(r => setTimeout(r, 200));
-  try { await api.setMessageReaction(SABBIR_NEXT_EMOJI, messageID, () => {}, true); } catch (_) {}
 }
 
 function sendOnce(api, threadID, body, replyToMessageID) {
@@ -83,6 +76,14 @@ async function editOnce(api, messageID, body) {
   }
 }
 
+function registerReplyNav(messageID, payload) {
+  global.GoatBot.onReply.set(messageID, {
+    commandName: "help",
+    messageID,
+    ...payload
+  });
+}
+
 module.exports.onStart = async function ({ api, event, message, args }) {
   const prefix = (global.GoatBot && global.GoatBot.config && global.GoatBot.config.prefix) || "/";
   const cmdList = getCmdList();
@@ -95,15 +96,13 @@ module.exports.onStart = async function ({ api, event, message, args }) {
       const body = buildPage(cmdList, page, totalPages, prefix);
       const sent = await sendOnce(api, event.threadID, body, event.messageID).catch(() => null);
       if (sent && sent.messageID && totalPages > 1) {
-        global.GoatBot.onReaction.set(sent.messageID, {
-          commandName: "help",
+        registerReplyNav(sent.messageID, {
           author: String(event.senderID),
           currentPage: page,
           cmdList,
           totalPages,
           prefix
         });
-        await setNavReactions(api, sent.messageID);
       }
       return;
     }
@@ -134,56 +133,70 @@ module.exports.onStart = async function ({ api, event, message, args }) {
   const sent = await sendOnce(api, event.threadID, body, event.messageID).catch(() => null);
 
   if (sent && sent.messageID && totalPages > 1) {
-    global.GoatBot.onReaction.set(sent.messageID, {
-      commandName: "help",
+    registerReplyNav(sent.messageID, {
       author: String(event.senderID),
       currentPage: 1,
       cmdList,
       totalPages,
       prefix
     });
-    await setNavReactions(api, sent.messageID);
   }
 };
 
-module.exports.onReaction = async function ({ api, event, Reaction }) {
-  const userID = String(event.userID || event.senderID || "");
-  if (userID !== String(Reaction.author)) return;
+module.exports.onReply = async function ({ api, event, Reply }) {
+  const userID = String(event.senderID || event.userID || "");
+  if (Reply.author && userID !== String(Reply.author)) return;
 
-  const reaction = (event.reaction || "").trim();
-  const { currentPage, cmdList, totalPages, prefix } = Reaction;
+  const raw = (event.body || "").trim().toLowerCase();
+  if (!raw) return;
+
+  const { currentPage, cmdList, totalPages, prefix, messageID } = Reply;
 
   let nextPage = currentPage;
-  if (reaction === SABBIR_NEXT_EMOJI || reaction === "▶" || reaction === "▶️") {
+  if (raw === "next" || raw === "n" || raw === "→" || raw === "->" || raw === ">>") {
     nextPage = currentPage + 1;
     if (nextPage > totalPages) nextPage = 1;
-  } else if (reaction === SABBIR_PREV_EMOJI || reaction === "◀" || reaction === "◀️") {
+  } else if (raw === "prev" || raw === "previous" || raw === "p" || raw === "back" || raw === "b" || raw === "←" || raw === "<-" || raw === "<<") {
     nextPage = currentPage - 1;
     if (nextPage < 1) nextPage = totalPages;
   } else {
-    return;
+    const num = parseInt(raw);
+    if (!isNaN(num) && num >= 1 && num <= totalPages) {
+      nextPage = num;
+    } else {
+      return;
+    }
   }
+
   if (nextPage === currentPage) return;
 
-  const messageID = event.messageID;
   const body = buildPage(cmdList, nextPage, totalPages, prefix);
   const ok = await editOnce(api, messageID, body);
 
   if (!ok) {
-    try {
-      await new Promise((resolve) => {
-        api.sendMessage({ body }, event.threadID, () => resolve(), messageID);
+    const sent = await sendOnce(api, event.threadID, body, event.messageID).catch(() => null);
+    if (sent && sent.messageID) {
+      registerReplyNav(sent.messageID, {
+        author: Reply.author,
+        currentPage: nextPage,
+        cmdList,
+        totalPages,
+        prefix
       });
-    } catch (_) {}
+    }
+  } else {
+    registerReplyNav(messageID, {
+      author: Reply.author,
+      currentPage: nextPage,
+      cmdList,
+      totalPages,
+      prefix
+    });
   }
 
-  Reaction.currentPage = nextPage;
-  global.GoatBot.onReaction.set(messageID, {
-    commandName: "help",
-    author: Reaction.author,
-    currentPage: nextPage,
-    cmdList,
-    totalPages,
-    prefix
-  });
+  try {
+    if (typeof api.unsendMessage === "function" && event.messageID) {
+      await api.unsendMessage(event.messageID).catch(() => {});
+    }
+  } catch (_) {}
 };
