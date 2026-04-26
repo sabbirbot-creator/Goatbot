@@ -731,7 +731,7 @@ async function startBot(loginWithEmail) {
                         // ——————————————————— LOAD DATA ——————————————————— //
                         const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = await require(process.env.NODE_ENV === 'development' ? "./loadData.dev.js" : "./loadData.js")(api, createLine);
                         // ————————————————— CUSTOM SCRIPTS ————————————————— //
-                        await require("../bot/custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
+                        await require("./custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
                         // —————————————————— LOAD SCRIPTS —————————————————— //
                         await require(process.env.NODE_ENV === 'development' ? "./loadScripts.dev.js" : "./loadScripts.js")(api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine);
                         // ———————————— CHECK AUTO LOAD SCRIPTS ———————————— //
@@ -1069,7 +1069,7 @@ async function startBot(loginWithEmail) {
                                 }, restartListenMqtt.timeRestart);
                                 global.intervalRestartListenMqtt = restart;
                         }
-                        require('../bot/autoUptime.js');
+                        require('./autoUptime.js');
                 });
         })(appState);
 

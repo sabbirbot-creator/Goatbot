@@ -14,8 +14,7 @@ A Facebook Messenger chat bot built on Node.js. It automates responses, handles 
 ## Project Structure
 - `Sabbir.js` - Process manager wrapper with auto-restart
 - `sabbir.js` - Main bot initialization and Express server (boots `utils/login.js`)
-- `bot/` - Bot extras (`autoUptime.js`, `custom.js`)
-- `utils/` - Login flow + bot utilities (`login.js`, `loadScripts.js`, `loadData.js`, `getFbstate*.js`, `checkLiveCookie.js`, `handlerWhenListenHasError.js`, `loginMbasic.js`, `socketIO.js`, plus loggers and helpers)
+- `utils/` - Login flow + bot utilities (`login.js`, `loadScripts.js`, `loadData.js`, `getFbstate*.js`, `checkLiveCookie.js`, `handlerWhenListenHasError.js`, `loginMbasic.js`, `socketIO.js`, `autoUptime.js`, `custom.js`, plus loggers and helpers)
 - `includes/handle/` - Event/command dispatcher (`handlerAction.js`, `handlerCheckData.js`, `handlerEvents.js`)
 - `scripts/cmds/` - Bot commands (26 loaded)
 - `scripts/events/` - Event handlers (5 loaded)
