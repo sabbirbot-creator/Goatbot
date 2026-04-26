@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node Sabbir.js",
+    "start:bot": "node sabbir.js",
     "login": "node login"
   },
   "author": "Ariful Islam Sabbir",
