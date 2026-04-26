@@ -1305,7 +1305,41 @@ try {
                             console.log("[FCA-DEBUG] fb_dtsg recovered via " + foundFrom + " (len=" + foundTok.length + ")");
                             html = '["DTSGInitData",[],{"token":"' + foundTok + '","async_get_token":""}],' + html;
                         } else {
-                            console.log("[FCA-DEBUG] No probe URL exposed an fb_dtsg. Chat APIs will likely 401.");
+                            // Last resort: launch headless Chromium so the page's own JS
+                            // executes the async DTSG fetch, then steal the token + the
+                            // post-navigation cookie set.
+                            try {
+                                console.log("[FCA-BROWSER] Launching headless Chromium to fetch fb_dtsg...");
+                                var fetchFbDtsgBrowser = require('./Extra/fetchFbDtsgBrowser');
+                                var appstateForBrowser = (global.Fca && global.Fca.Data && Array.isArray(global.Fca.Data.AppState)) ? global.Fca.Data.AppState : [];
+                                var br = await fetchFbDtsgBrowser.fetchFbDtsgViaBrowser(appstateForBrowser);
+                                if (br && br.token) {
+                                    console.log("[FCA-BROWSER] fb_dtsg recovered via headless browser (source=" + br.source + " len=" + br.token.length + ")");
+                                    html = '["DTSGInitData",[],{"token":"' + br.token + '","async_get_token":""}],' + html;
+                                    // Replay the browser's post-navigation cookies into the
+                                    // FCA jar so xs / c_user rotations are reflected.
+                                    if (Array.isArray(br.cookies)) {
+                                        var farFuture = "Tue, 19 Jan 2038 03:14:07 GMT";
+                                        for (var ci = 0; ci < br.cookies.length; ci++) {
+                                            var bc = br.cookies[ci];
+                                            if (!bc || !bc.name) continue;
+                                            try {
+                                                jar.setCookie(
+                                                    bc.name + "=" + bc.value +
+                                                    "; expires=" + farFuture +
+                                                    "; domain=" + (bc.domain && bc.domain.replace(/^\./, '') || 'facebook.com') +
+                                                    "; path=" + (bc.path || '/') + ";",
+                                                    "https://www.facebook.com"
+                                                );
+                                            } catch (eCk) {}
+                                        }
+                                    }
+                                } else {
+                                    console.log("[FCA-BROWSER] Headless browser could not extract fb_dtsg" + (br && br.error ? (": " + br.error) : "."));
+                                }
+                            } catch (eBr) {
+                                console.log("[FCA-BROWSER] Headless extraction failed: " + (eBr && eBr.message));
+                            }
                         }
                     }
                     var Obj = buildAPI(globalOptions, html, jar, bypass_region_err);

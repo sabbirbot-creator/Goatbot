@@ -76,6 +76,7 @@
     "pino": "^9.0.0",
     "pino-pretty": "^10.0.0",
     "pretty-ms": "^9.3.0",
+    "puppeteer-core": "^24.42.0",
     "qr-image": "^3.2.0",
     "qrcode": "^1.5.3",
     "qrcode-reader": "^1.0.4",

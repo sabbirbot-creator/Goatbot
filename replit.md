@@ -62,3 +62,17 @@ If the empty-token behavior persists for the account in `account.txt`, the only 
 - Switch to Facebook's official Graph API with a Page Access Token (only works for Page-scoped messaging, not personal accounts).
 
 These are larger architectural changes, not a quick patch.
+
+### Headless-browser experiment (2026-04-26): appstate is server-side revoked
+
+We added a Puppeteer-core + system Chromium fallback (`sabbir-fca/Extra/fetchFbDtsgBrowser.js`) wired into `Main.js` so a real browser could execute the page's JS and grab `fb_dtsg`. With proper cookie setup (URL anchor + `.facebook.com` domain + stealth patches for `navigator.webdriver` etc.), the browser **does** load with all 5 cookies in its jar:
+
+```
+[FCA-BROWSER] PRE-nav  page.cookies: [xs, fr, c_user, sb, datr]   ← all 5 set OK
+[FCA-BROWSER] post-nav page.cookies: [fr, sb, datr]               ← FB cleared c_user + xs
+[FCA-BROWSER] post-nav url=https://www.facebook.com/ bodyChars=482 loginForm=true
+```
+
+Facebook's first response includes a `Set-Cookie` that explicitly **deletes `c_user` and `xs`** (the only cookies that prove identity). The page that gets rendered is the public login form, not the homepage. This is the definitive Facebook signal for "your session has been revoked" — it cannot be worked around with code. The cookies in `account.txt` are dead.
+
+To bring the bot online, replace `account.txt` with a fresh appstate exported right after a successful Chrome login (e.g. via the C3C-FBState browser extension, or any tool that exports `document.cookie` + `httpOnly` cookies for `*.facebook.com`). The headless-browser fallback remains wired in: when a fresh, server-side-valid appstate is supplied, it should now succeed at fetching the live `fb_dtsg`.
