@@ -12,7 +12,7 @@ module.exports.config = {
   countDown: 0
 };
 
-const BOT_NICKNAME = "🤖 Sabbir Bot";
+const BOT_NICKNAME = "▭▭▭ 𝕊𝔸𝔹𝔹𝕀ℝ ℂℍ𝔸𝕋 𝔹𝕆𝕋 ▭▭▭";
 
 function applyTemplate(template, fullName) {
   const safe = (template || "").toString();
@@ -27,14 +27,15 @@ async function botSelfWelcome(api, threadID, isGroup) {
   try { await api.changeNickname(BOT_NICKNAME, threadID, String(api.getCurrentUserID())); } catch (_) {}
 
   const lines = [
-    "╔══✨ HELLO EVERYONE ✨══╗",
-    "🤖 আমি Sabbir Chat Bot",
-    "👑 Owner: Md Ariful Islam Sabbir",
-    "📋 সব command দেখতে: /help",
-    "📛 Auto Nickname চালু করতে: /autonickname on",
-    "💙 ধন্যবাদ আমাকে add করার জন্য!",
-    "╚══════════════════════╝"
-  ];
+"╔══ HELLO EVERYONE ══╗",
+"I AM SABBIR CHAT BOT",
+"OWNER: MD ARIFUL ISLAM SABBIR",
+"TYPE /help FOR ALL COMMANDS",
+"INFO: /info FOR ADMIN DETAILS",
+"STATUS: ACTIVE AND READY TO HELP",
+"THANK YOU FOR ADDING ME",
+"╚══════════════════════╝"
+];
 
   await animateSendLines(api, threadID, lines, {
     initialBody: "✨ ...",
