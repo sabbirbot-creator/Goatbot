@@ -1,17 +1,16 @@
-const SABBIR = "Ariful Islam Sabbir";
 const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
 module.exports.config = {
   name: "install",
-  version: "1.0.0",
+  version: "1.0.1",
   role: 2,
   credits: "Ariful Islam Sabbir",
-  description: "Messenger থেকে JS কমান্ড ফাইল ইন্সটল করো",
+  description: "Install JS command from Messenger file",
   usePrefix: true,
   category: "Admin",
-  usages: "install (JS ফাইল attach করে পাঠাও)",
+  usages: "install (attach js file)",
   cooldowns: 5
 };
 
@@ -23,109 +22,55 @@ module.exports.onStart = async function ({ api, event }) {
     ...((messageReply && messageReply.attachments) || [])
   ];
 
-  const jsFile = allAttachments.find(att =>
-    att.type === "file" &&
-    att.name &&
-    att.name.endsWith(".js")
+  const jsFile = allAttachments.find(a =>
+    a?.name?.endsWith(".js") || a?.filename?.endsWith(".js")
   );
 
   if (!jsFile) {
-    return api.sendMessage(
-      "❌ কোনো JS ফাইল পাওয়া যায়নি!",
-      threadID,
-      messageID
-    );
+    return api.sendMessage("❌ কোনো JS ফাইল পাওয়া যায়নি!", threadID, messageID);
   }
 
-  const fileName = jsFile.name;
+  const fileName = jsFile.name || jsFile.filename;
   const fileUrl = jsFile.url;
-  const savePath = path.normalize(path.join(process.cwd(), "scripts", "cmds", fileName));
 
-  await api.sendMessage(`⏳ "${fileName}" সেভ হচ্ছে...`, threadID);
+  const dir = path.join(process.cwd(), "scripts", "cmds");
+  const savePath = path.join(dir, fileName);
+
+  fs.ensureDirSync(dir);
+
+  api.sendMessage(`⏳ Installing "${fileName}"...`, threadID, messageID);
 
   try {
-    const response = await axios.get(fileUrl, { responseType: "text", timeout: 15000 });
-    const fileContent = response.data;
+    const res = await axios.get(fileUrl, { responseType: "arraybuffer" });
+    const fileContent = res.data.toString("utf8");
 
-    fs.writeFileSync(savePath, fileContent, "utf8");
+    fs.writeFileSync(savePath, fileContent);
 
-    let command;
-    try {
-      delete require.cache[require.resolve(savePath)];
-      command = require(savePath);
-    } catch (loadErr) {
+    delete require.cache[require.resolve(savePath)];
+
+    const command = require(savePath);
+
+    if (!command?.config?.name || !command?.onStart) {
       fs.removeSync(savePath);
-      return api.sendMessage(
-        `❌ ফাইলটি সেভ হয়েছে কিন্তু লোড করতে সমস্যা হয়েছে!\n\n🐛 Error: ${loadErr.message}`,
-        threadID,
-        messageID
-      );
+      return api.sendMessage("❌ Invalid command format!", threadID, messageID);
     }
 
-    const config = command.config;
+    const name = command.config.name.toLowerCase();
 
-    if (!config || !config.name || !config.category || typeof command.onStart !== "function") {
-      fs.removeSync(savePath);
-      return api.sendMessage(
-        `❌ ফাইলটি সঠিক format এ নেই!\n\nদরকারি field:\n• config.name\n• config.category\n• onStart function`,
-        threadID,
-        messageID
-      );
-    }
+    global.GoatBot = global.GoatBot || {};
+    global.GoatBot.commands = global.GoatBot.commands || new Map();
 
-    const commandName = config.name.toLowerCase();
-
-    if (global.GoatBot.commands.has(commandName)) {
-      global.GoatBot.commands.delete(commandName);
-
-      const aliasesToRemove = [];
-      for (const [alias, name] of global.GoatBot.aliases) {
-        if (name === commandName) aliasesToRemove.push(alias);
-      }
-      aliasesToRemove.forEach(a => global.GoatBot.aliases.delete(a));
-
-      const idx = global.GoatBot.commandFilesPath.findIndex(f =>
-        f.commandName.includes(commandName)
-      );
-      if (idx !== -1) global.GoatBot.commandFilesPath.splice(idx, 1);
-    }
-
-    command.location = savePath;
-    global.GoatBot.commands.set(commandName, command);
-
-    if (config.aliases && Array.isArray(config.aliases)) {
-      for (const alias of config.aliases) {
-        global.GoatBot.aliases.set(alias.toLowerCase(), commandName);
-      }
-    }
-
-    if (typeof command.onChat === "function" && !global.GoatBot.onChat.includes(commandName)) {
-      global.GoatBot.onChat.push(commandName);
-    }
-    if (typeof command.onEvent === "function" && !global.GoatBot.onEvent.includes(commandName)) {
-      global.GoatBot.onEvent.push(commandName);
-    }
-
-    global.GoatBot.commandFilesPath.push({
-      filePath: savePath,
-      commandName: [commandName, ...(config.aliases || [])]
-    });
-
-    if (typeof command.onLoad === "function") {
-      try {
-        await command.onLoad({ api });
-      } catch (e) {}
-    }
+    global.GoatBot.commands.set(name, command);
 
     return api.sendMessage(
-      `✅ "${fileName}" সফলভাবে ইন্সটল হয়েছে!\n\n📌 কমান্ড নাম: /${config.name}\n📂 Category: ${config.category}\n🔖 Version: ${config.version || "1.0.0"}\n\nএখনই ব্যবহার করতে পারবে — bot restart না দিলেও চলবে!`,
+      `✅ Installed successfully!\n📌 Command: /${name}`,
       threadID,
       messageID
     );
 
   } catch (err) {
     return api.sendMessage(
-      `❌ ফাইল ডাউনলোড বা সেভ করতে সমস্যা হয়েছে!\n\n🐛 Error: ${err.message}`,
+      `❌ Install failed!\n${err.message}`,
       threadID,
       messageID
     );
